@@ -8842,10 +8842,10 @@ class TestSPARQL(BaseTest, unittest.TestCase):
   def test_42(self):
     world, onto = self.prepare1()
     onto.a1.annot = [locstr("abc", "en"), locstr("def", "fr"), "ghi"]
-    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(?x, "*") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
+    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(LANG(?x), "*") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
     assert len(r) == 3
     assert { tuple(x) for x in r } == { (locstr('abc', 'en'), True), (locstr('def', 'fr'), True), ("ghi", False) }
-    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(?x, "FR") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
+    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(LANG(?x), "FR") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
     assert len(r) == 3
     assert { tuple(x) for x in r } == { (locstr('abc', 'en'), False), (locstr('def', 'fr'), True), ("ghi", False) }
     
@@ -10477,6 +10477,40 @@ onto:patient1 onto:match ?x .
     assert comment[c1, p, 1] == []
     assert comment[c1, p, 2] == []
     assert comment[c1, p, 3] == ["com"]
+    
+  def test_166(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class E(Thing):
+        label = [locstr("E", "en")]
+    
+      class E_US(Thing):
+        label = [locstr("E_US", "en-US")]
+    
+      class F(Thing):
+        label = [locstr("F", "fr")]
+    
+      class F2(Thing):
+        label = [locstr("F2", "fr")]
+    
+      class X(Thing):
+        label = ["X"]
+        
+        
+    q, r = self.sparql(world, """SELECT ?x1 { ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),"en")) }""")
+    assert set(i[0] for i in r) == { E, E_US }
+
+    q, r = self.sparql(world, """SELECT ?x1 { ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),"en-US")) }""")
+    assert set(i[0] for i in r) == { E_US }
+
+    q, r = self.sparql(world, """SELECT ?x1 { onto:F rdfs:label ?ref. ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),LANG(?ref))) }""")
+    assert set(i[0] for i in r) == { F, F2 }
+    
+    q, r = self.sparql(world, """SELECT (LANG(?lab) AS ?lang) { onto:X rdfs:label ?lab. }""")
+    assert r == [[""]]
+    
+    #assert set(i[0] for i in r) == { E_US }
     
 # Add test for Pellet
 

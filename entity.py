@@ -448,8 +448,10 @@ class ThingClass(EntityClass):
   def _satisfied_by(Class, x):
     return (isinstance(x, EntityClass) and issubclass(x, Class)) or isinstance(x, Class)
   
-  def _get_class_possible_relations(Class):
-    for Prop in Class.namespace.world._reasoning_props.values():
+  def _get_class_possible_relations(Class, include_annotation = False):
+    if include_annotation: Props = Class.namespace.world._props
+    else:                  Props = Class.namespace.world._reasoning_props
+    for Prop in Props.values():
       for domain in Prop.domains_indirect():
         if not domain._satisfied_by(Class): break
       else:

@@ -29,6 +29,7 @@ CURRENT_NAMESPACES = ContextVar("CURRENT_NAMESPACES", default = None)
 
 PREDEFINED_ONTOLOGIES = {
   "http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#" : "owlready_ontology.owl",
+  "http://www.lesfleursdunormal.fr/static/_downloads/owlready_editor.owl#" : "owlready_editor.owl",
   "http://purl.org/dc/elements/1.1/" : "dc.owl",
   "http://purl.org/dc/dcam/" : "dcam.owl",
   "http://purl.org/dc/dcmitype/" : "dcmitype.owl",

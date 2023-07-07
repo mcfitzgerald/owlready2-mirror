@@ -366,15 +366,28 @@ class FuncSupport(object):
           elif func == "RAND":
             return "((RANDOM() + 9223372036854775808) / 18446744073709551615)"
           elif func == "LANGMATCHES":
-            eo1          = self.parse_expression     (expression[2][0])
-            e1_type, ed1 = self.infer_expression_type(expression[2][0])
-            eo2          = self.parse_expression     (expression[2][2]).strip()
+            eo1 = self.parse_expression(expression[2][0]).strip()
+            eo2 = self.parse_expression(expression[2][2]).strip()
             if   eo2 == "'*'":
-              return "TYPEOF(%s)='text'" % ed1
-            elif eo2.startswith("'") and (len(eo2) <= 4):
-              return "SUBSTR(%s,2,2)=LOWER(%s)" % (ed1, eo2)
+              return "%s!=''" % eo1
+            elif eo2.startswith("'"):
+              if len(eo2) <= 4:
+                return "LOWER(SUBSTR(%s,1,2))=%s" % (eo1, eo2.lower())
+              else:
+                return "LOWER(%s)=%s" % (eo1, eo2.lower())
             else:
-              return "IIF(%s='*',TYPEOF(%s)='text',SUBSTR(%s,2,2)=LOWER(%s))" % (eo2, ed1, ed1, eo2)
+              return "IIF(%s='*',%s!='',%s=LOWER(%s))" % (eo2, eo1, eo1, eo2)
+            # eo1          = self.parse_expression     (expression[2][0])
+            # e1_type, ed1 = self.infer_expression_type(expression[2][0])
+
+            # print("!!!", expression[2][0], e1_type, ed1)
+            # eo2          = self.parse_expression     (expression[2][2]).strip()
+            # if   eo2 == "'*'":
+            #   return "TYPEOF(%s)='text'" % ed1
+            # elif eo2.startswith("'") and (len(eo2) <= 4):
+            #   return "SUBSTR(%s,2,2)=LOWER(%s)" % (ed1, eo2)
+            # else:
+            #   return "IIF(%s='*',TYPEOF(%s)='text',SUBSTR(%s,2,2)=LOWER(%s))" % (eo2, ed1, ed1, eo2)
           elif func == "STRDT":
             return self.parse_expression(expression[2][0])
           elif func == "STRLANG":
