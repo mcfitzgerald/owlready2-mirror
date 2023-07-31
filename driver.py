@@ -246,7 +246,11 @@ class BaseSubGraph(BaseGraph):
           
       try:
         parallel = os.path.getsize(f.name) >= 8000000
-        if parallel: import multiprocessing
+        if parallel:
+          import multiprocessing
+          if multiprocessing.get_start_method() != "fork":
+            parallel = False # Spawn is not supported -- I still need to figure out how to transfer the file object to the spawned process
+            
       except:
         parallel = False
         
@@ -254,6 +258,7 @@ class BaseSubGraph(BaseGraph):
         if parallel:
           queue = multiprocessing.Queue()
           multiprocessing.Process(target = do_parse).start()
+          print("MULTI")
           onto_base_iri = self.import_triples_from_queue(queue, getattr(f, "name", ""), delete_existing_triples)
         else:
           queue = _FakeQueue(*self.import_triples_from_queue(None, getattr(f, "name", ""), delete_existing_triples))
@@ -269,8 +274,9 @@ class BaseSubGraph(BaseGraph):
     if commit: self.parent.commit()
     _save(f, format, self, **kargs)
     
-  
-  
+
+
+          
 def _guess_format(f):
   if f.seekable():
     s = f.read(1000)
