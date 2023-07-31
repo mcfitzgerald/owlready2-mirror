@@ -171,9 +171,15 @@ WHERE q1.p=? AND q1.o=?
     self._del_obj_triple_raw_spo(s, p, o)
     
     if _LOG_LEVEL > 1:
-      if not s < 0: s = self._unabbreviate(s)
-      if p: p = self._unabbreviate(p)
-      if o and not ((isinstance(o, int) and (o < 0)) or (isinstance(o, str) and o.startswith('"'))): o = self._unabbreviate(o)
+      if (not s is None) and (not s < 0):
+        try:    s = self._unabbreviate(s) # May have been removed by previous or current del
+        except: pass
+      if (not p is None):
+        try:    p = self._unabbreviate(p) # May have been removed by previous or current del
+        except: pass
+      if (not o is None) and not ((isinstance(o, int) and (o < 0)) or (isinstance(o, str) and o.startswith('"'))):
+        try:    o = self._unabbreviate(o) # May have been removed by previous or current del
+        except: pass
       print("* Owlready2 * DEL TRIPLE", s, p, o, file = sys.stderr)
       
   def _del_data_triple_spod(self, s = None, p = None, o = None, d = None):

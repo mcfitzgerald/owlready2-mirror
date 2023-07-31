@@ -7296,6 +7296,19 @@ ask where
     
     assert c.c_to_b == []  # asserts to False
     
+  def test_destroy_27(self):
+    w  = self.new_world()
+    o1 = w.get_ontology("http://test.org/test")
+    
+    with o1:
+      class prop1(ObjectProperty): pass
+      class prop3(FunctionalProperty, ReflexiveProperty, prop1): pass
+    destroy_entity(prop1)
+    
+    assert not issubclass(prop3, prop1)
+    assert issubclass(prop3, FunctionalProperty)
+    assert issubclass(prop3, ReflexiveProperty)
+    
     
     
   def test_observe_1(self):

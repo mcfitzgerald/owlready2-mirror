@@ -743,7 +743,8 @@ version 2 - 0.44
   - Fix SPARQL GRAPH clause in SELECT queries when querying the graph as a variable and all triples are not inside the GRAPH clause
   - Fix LANGMATCHES SPARQL function
   - Prevent multiprocessing loading of large ontologies when fork is not available (i.e. on Mac)
-  
+  - Fix subproperties parent classes when destroying a property
+    
     
 Links
 -----

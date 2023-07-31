@@ -979,8 +979,6 @@ SELECT c, o FROM objs q1 WHERE s=? AND o < 0 AND (SELECT COUNT() FROM objs q2 WH
     self.execute("INSERT INTO resources VALUES (?,?)", (storid, iri))
       
   def destroy_entity(self, storid, destroyer, relation_updater, undoer_objs = None, undoer_datas = None):
-    self.execute("DELETE FROM resources WHERE storid=?", (storid,))
-      
     destroyed_storids   = { storid }
     modified_relations  = defaultdict(set)
     self._destroy_collect_storids(destroyed_storids, modified_relations, storid)
@@ -1008,6 +1006,8 @@ SELECT c, o FROM objs q1 WHERE s=? AND o < 0 AND (SELECT COUNT() FROM objs q2 WH
     for s, ps in modified_relations.items():
       relation_updater(destroyed_storids, s, ps)
       
+    self.execute("DELETE FROM resources WHERE storid=?", (storid,)) # At the end, so as the resource is still available for logging during destroying
+    
     return destroyed_storids
   
   def _iter_ontology_iri(self, c = None):
