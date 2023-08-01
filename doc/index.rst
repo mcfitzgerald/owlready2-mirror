@@ -50,5 +50,6 @@ Table of content
    general_class_axioms.rst
    pymedtermino2.rst
    observe.rst
+   development.rst
    porting1.rst
    contact.rst
