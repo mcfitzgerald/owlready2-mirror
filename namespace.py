@@ -595,8 +595,8 @@ class World(_GraphManager):
               with ontology: sub.range.append(obj)
               continue
             
-      if d is None: ontology.graph._add_obj_triple_raw_spo  (s, p, o)
-      else:         ontology.graph._add_data_triple_raw_spod(s, p, o, d)
+      if d is None: ontology._add_obj_triple_raw_spo  (s, p, o)
+      else:         ontology._add_data_triple_raw_spod(s, p, o, d)
       
     # Factorize is_a quads for better performance
     for (g, s, p), os in is_a_quads.items():
@@ -614,7 +614,7 @@ class World(_GraphManager):
           with ontology: sub.is_a.extend(objs)
           
       else:
-        for o in os: ontology.graph._add_obj_triple_raw_spo(s, p, o)
+        for o in os: ontology._add_obj_triple_raw_spo(s, p, o)
         
     
   def get(self, iri, default = None):

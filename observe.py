@@ -90,33 +90,40 @@ def start_observing(onto_or_world):
   if not hasattr(world, "_observations"):
     world._observations = {}
     
-    triple_obj_method = world._del_obj_triple_spo
-    def _del_obj_triple_spo_observed(s = None, p = None, o = None):
+    triple_obj_method = world._del_obj_triple_raw_spo
+    def _del_obj_triple_raw_spo_observed(s = None, p = None, o = None):
+      if p is None: p2 = [i for i, in world.graph.execute("SELECT DISTINCT p FROM objs WHERE s=?", (s,))]
+      else:         p2 = [p]
+      
       if s is None:
         if p is None:
           if o is None: observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs")]
           else:         observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs WHERE o=?", (o,))]
           triple_obj_method(s, p, o)
           for observation, p in observations_ps:
-            if observation: observation.call([p])
+            if observation: observation.call(p2)
             
         else:
           if o is None: observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM objs WHERE p=?", (p,))]
           else:         observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM objs WHERE p=? AND o=?", (p, o,))]
           triple_obj_method(s, p, o)
           for observation in observations:
-            if observation: observation.call([p])
+            if observation: observation.call(p2)
             
       else:
         triple_obj_method(s, p, o)
         observation = world._observations.get(s)
-        if observation:   observation.call([p])
-        elif s < 0: _check_annotation_axiom(world, s, p)
+        if observation: observation.call(p2)
+        elif s < 0:
+          for i in p2: _check_annotation_axiom(world, s, i)
         
-    world._del_obj_triple_spo = _del_obj_triple_spo_observed
+    world._del_obj_triple_raw_spo = _del_obj_triple_raw_spo_observed
     
-    triple_data_method = world._del_data_triple_spod
-    def _del_data_triple_spod_observed(s = None, p = None, o = None, d = None):
+    triple_data_method = world._del_data_triple_raw_spod
+    def _del_data_triple_raw_spod_observed(s = None, p = None, o = None, d = None):
+      if p is None: p2 = [i for i, in world.graph.execute("SELECT DISTINCT p FROM datas WHERE s=?", (s,))]
+      else:         p2 = [p]
+        
       if s is None:
         if p is None:
           if   o is None: observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs")]
@@ -124,7 +131,7 @@ def start_observing(onto_or_world):
           else:           observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs WHERE o=? AND d=?", (o, d,))]
           triple_data_method(s, p, o, d)
           for observation, p in observations_ps:
-            if observation: observation.call([p])
+            if observation: observation.call(p2)
             
         else:
           if   o is None: observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM datas WHERE p=?", (p,))]
@@ -132,15 +139,16 @@ def start_observing(onto_or_world):
           else:           observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM datas WHERE p=? AND o=? AND d=?", (p, o, d,))]
           triple_data_method(s, p, o, d)
           for observation in observations:
-            if observation: observation.call([p])
+            if observation: observation.call(p2)
             
       else:
         triple_data_method(s, p, o, d)
         observation = world._observations.get(s)
-        if observation:   observation.call([p])
-        elif s < 0:_check_annotation_axiom(world, s, p)
+        if observation: observation.call(p2)
+        elif s < 0:
+          for i in p2: _check_annotation_axiom(world, s, i)
         
-    world._del_data_triple_spod = _del_data_triple_spod_observed
+    world._del_data_triple_raw_spod = _del_data_triple_raw_spod_observed
     
   if onto_or_world is onto_or_world.world: # Start observing all ontologies
     for onto in world.ontologies.values(): start_observing(onto)
@@ -161,7 +169,7 @@ def start_observing(onto_or_world):
       onto._add_data_triple_raw_spod = _gen_triple_method_data(onto, onto.graph._add_data_triple_raw_spod)
       onto._set_data_triple_raw_spod = _gen_triple_method_data(onto, onto.graph._set_data_triple_raw_spod)
       onto._del_data_triple_raw_spod = _gen_triple_method_data(onto, onto.graph._del_data_triple_raw_spod)
-
+      
       _old_entity_destroyed = onto._entity_destroyed
       def _entity_destroyed(entity):
         _old_entity_destroyed(entity)
@@ -178,8 +186,8 @@ def stop_observing(onto_or_world):
     world = onto_or_world
     for onto in world.ontologies.values(): stop_observing(onto)
 
-    del world._del_obj_triple_spo
-    del world._del_data_triple_spod
+    world._del_obj_triple_raw_spo   = world.graph._del_obj_triple_raw_spo
+    world._del_data_triple_raw_spod = world.graph._del_data_triple_raw_spod
     if hasattr(world, "_register_ontology"): del world._register_ontology
   else:
     onto = onto_or_world
