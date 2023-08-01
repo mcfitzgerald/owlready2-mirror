@@ -8048,7 +8048,7 @@ for i in range(500):
     
     s = world.graph.execute("SELECT MAX(storid) FROM resources").fetchone()[0]
     assert s == 300 + 4 + 1000 * NB
-
+    
   # TODO: fix this test - it currently fails on some systems
   def test_parallel_4(self):
     q  = self.new_tmp_file()
