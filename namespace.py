@@ -652,7 +652,7 @@ class World(_GraphManager):
         elif obj == owl_annotation_property: main_type = AnnotationPropertyClass; types.append(AnnotationProperty)
         elif (obj == owl_named_individual) or (obj == owl_thing):
           if main_type is None: main_type = Thing
-        elif 105 <= obj <= 109:              main_type = ObjectPropertyClass;     types.append(ObjectProperty) # TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
+        elif 105 <= obj <= 109:              main_type = ObjectPropertyClass;     types.append(self._get_by_storid(obj)) # TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
         else:
           if not main_type: main_type = Thing
           if obj < 0: is_a_bnodes.append((self.graph.context_2_user_context(graph), obj))

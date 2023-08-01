@@ -744,6 +744,7 @@ version 2 - 0.44
   - Fix LANGMATCHES SPARQL function
   - Prevent multiprocessing loading of large ontologies when fork is not available (i.e. on Mac)
   - Fix subproperties parent classes when destroying a property
+  - Fix loading of TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
     
     
 Links

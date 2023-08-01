@@ -2880,6 +2880,19 @@ class Test(BaseTest, unittest.TestCase):
     w2 = self.new_world()
     o  = w2.get_ontology(temp).load()
     assert o.c1.p == [o.c2]
+      
+  def test_prop_58(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class p(ObjectProperty, FunctionalProperty, InverseFunctionalProperty, ReflexiveProperty, IrreflexiveProperty, SymmetricProperty, AsymmetricProperty, TransitiveProperty): pass
+    f = self.new_tmp_file()
+    onto.save(f)
+
+    world = self.new_world()
+    onto  = world.get_ontology(f).load()
+    assert set(onto.p.is_a) == {ObjectProperty, FunctionalProperty, InverseFunctionalProperty, ReflexiveProperty, IrreflexiveProperty, SymmetricProperty, AsymmetricProperty, TransitiveProperty}
+    
     
   def test_prop_inverse_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
