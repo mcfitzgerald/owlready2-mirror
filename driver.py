@@ -258,7 +258,6 @@ class BaseSubGraph(BaseGraph):
         if parallel:
           queue = multiprocessing.Queue()
           multiprocessing.Process(target = do_parse).start()
-          print("MULTI")
           onto_base_iri = self.import_triples_from_queue(queue, getattr(f, "name", ""), delete_existing_triples)
         else:
           queue = _FakeQueue(*self.import_triples_from_queue(None, getattr(f, "name", ""), delete_existing_triples))
