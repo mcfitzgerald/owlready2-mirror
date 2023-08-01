@@ -92,38 +92,33 @@ def start_observing(onto_or_world):
     
     triple_obj_method = world._del_obj_triple_raw_spo
     def _del_obj_triple_raw_spo_observed(s = None, p = None, o = None):
-      if p is None: p2 = [i for i, in world.graph.execute("SELECT DISTINCT p FROM objs WHERE s=?", (s,))]
-      else:         p2 = [p]
-      
       if s is None:
         if p is None:
           if o is None: observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs")]
           else:         observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs WHERE o=?", (o,))]
           triple_obj_method(s, p, o)
           for observation, p in observations_ps:
-            if observation: observation.call(p2)
+            if observation: observation.call([p])
             
         else:
           if o is None: observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM objs WHERE p=?", (p,))]
           else:         observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM objs WHERE p=? AND o=?", (p, o,))]
           triple_obj_method(s, p, o)
           for observation in observations:
-            if observation: observation.call(p2)
+            if observation: observation.call([p])
             
       else:
+        p2 = [p] if p else [i for i, in world.graph.execute("SELECT DISTINCT p FROM objs WHERE s=?", (s,))]
         triple_obj_method(s, p, o)
         observation = world._observations.get(s)
         if observation: observation.call(p2)
         elif s < 0:
           for i in p2: _check_annotation_axiom(world, s, i)
-        
+          
     world._del_obj_triple_raw_spo = _del_obj_triple_raw_spo_observed
     
     triple_data_method = world._del_data_triple_raw_spod
     def _del_data_triple_raw_spod_observed(s = None, p = None, o = None, d = None):
-      if p is None: p2 = [i for i, in world.graph.execute("SELECT DISTINCT p FROM datas WHERE s=?", (s,))]
-      else:         p2 = [p]
-        
       if s is None:
         if p is None:
           if   o is None: observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs")]
@@ -131,7 +126,7 @@ def start_observing(onto_or_world):
           else:           observations_ps = [(world._observations.get(s), p) for (s, p) in world.graph.execute("SELECT DISTINCT s, p FROM objs WHERE o=? AND d=?", (o, d,))]
           triple_data_method(s, p, o, d)
           for observation, p in observations_ps:
-            if observation: observation.call(p2)
+            if observation: observation.call([p])
             
         else:
           if   o is None: observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM datas WHERE p=?", (p,))]
@@ -139,9 +134,10 @@ def start_observing(onto_or_world):
           else:           observations = [world._observations.get(s) for (s,) in world.graph.execute("SELECT DISTINCT s FROM datas WHERE p=? AND o=? AND d=?", (p, o, d,))]
           triple_data_method(s, p, o, d)
           for observation in observations:
-            if observation: observation.call(p2)
+            if observation: observation.call([p])
             
       else:
+        p2 = [p] if p else [i for i, in world.graph.execute("SELECT DISTINCT p FROM datas WHERE s=?", (s,))]
         triple_data_method(s, p, o, d)
         observation = world._observations.get(s)
         if observation: observation.call(p2)
