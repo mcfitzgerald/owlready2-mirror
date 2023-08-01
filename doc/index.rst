@@ -49,5 +49,6 @@ Table of content
    rule.rst
    general_class_axioms.rst
    pymedtermino2.rst
+   observe.rst
    porting1.rst
    contact.rst

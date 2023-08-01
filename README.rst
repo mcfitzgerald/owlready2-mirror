@@ -737,6 +737,7 @@ version 2 - 0.44
 * New syntax for annotations on relation, e.g. AnnotatedRelation(s,p,o).comment = "abc" (the old syntax remains supported)
 * Optimize annotations on relations
 * Support GRAPH clauses in SPARQL INSERT queries
+* Observation framework (see owlready2.observe and doc on the observation framework)
 * Bugfixes:
   - Fix the update of equivalent_to after destroying a class
   - Fix the update of annotations on class when modified with SPARQL queries
