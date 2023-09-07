@@ -2943,6 +2943,17 @@ class Test(BaseTest, unittest.TestCase):
     onto  = world.get_ontology(f).load()
     assert set(onto.p.is_a) == {ObjectProperty, FunctionalProperty, InverseFunctionalProperty, ReflexiveProperty, IrreflexiveProperty, SymmetricProperty, AsymmetricProperty, TransitiveProperty}
     
+  def test_prop_59(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p(C >> int, FunctionalProperty): pass
+      
+    c1 = C()
+    p.name = "p2"
+    c1.p2 = 0
+    assert c1.get_properties() == { p }
     
   def test_prop_inverse_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")

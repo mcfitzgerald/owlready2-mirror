@@ -104,7 +104,12 @@ class PropertyClass(EntityClass):
       if not class_property_type is None:
         Prop.class_property_type = class_property_type
         
-        
+  def set_name(Prop, name):
+    change_python_name = Prop._python_name == Prop._name
+    EntityClass.set_name(Prop, name)
+    if change_python_name: Prop.python_name = name
+  name = property(EntityClass.get_name, set_name)
+    
   def _check_update(Prop, onto):
     if onto._has_obj_triple_spo(Prop.storid):
       Prop._range  = None

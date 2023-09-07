@@ -751,7 +751,9 @@ version 2 - 0.45
 ****************
 
 * The PREDEFINED_ONTOLOGIES global dictionary can now be used to map ontology IRI to arbitrary local pathes.
-  
+* Bugfixes:
+  * Fix set_name() on property when python_name is the same as name
+    
     
 Links
 -----
