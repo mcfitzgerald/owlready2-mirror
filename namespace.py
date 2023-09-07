@@ -930,10 +930,10 @@ class Ontology(Namespace, _GraphManager):
   def load(self, only_local = False, fileobj = None, reload = False, reload_if_newer = False, url = None, **args):
     if self.loaded and (not reload): return self
     
-    if   self._base_iri in PREDEFINED_ONTOLOGIES:
-      f = os.path.join(os.path.dirname(__file__), "ontos", PREDEFINED_ONTOLOGIES[self._base_iri])
+    f = PREDEFINED_ONTOLOGIES.get(self._base_iri) or PREDEFINED_ONTOLOGIES.get(self._base_iri[:-1])
+    if f:
+      if not os.path.isabs(f): f = os.path.join(os.path.dirname(__file__), "ontos", f)
     elif not fileobj:
-      #f = fileobj or _get_onto_file(self._base_iri, self.name, "r", only_local)
       f = fileobj or _get_onto_file(self._orig_base_iri, self.name, "r", only_local)
     else:
       f = ""
@@ -945,7 +945,7 @@ class Ontology(Namespace, _GraphManager):
     
     try:
       if reload: self._destroy_cached_entities()
-
+      
       new_base_iri = None
       if f.startswith("http:") or f.startswith("https:"):
         if  reload or (self.graph.get_last_update_time() == 0.0): # Never loaded

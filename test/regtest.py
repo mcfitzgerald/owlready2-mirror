@@ -880,6 +880,56 @@ class Test(BaseTest, unittest.TestCase):
     assert C.namespace is n
     assert n.C is C
     
+  def test_ontology_36(self):
+    w = self.new_world()
+    
+    o1_f = self.new_tmp_file()
+    o2_f = self.new_tmp_file()
+    
+    f = open(o1_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/o1.owl"
+         xmlns="http://test.org/o1.owl#">
+
+<owl:Ontology rdf:about="http://test.org/o1.owl">
+  <owl:imports rdf:resource="http://test.org/o2.owl"/>
+</owl:Ontology>
+    
+<owl:Class rdf:about="http://test.org/o1.owl#C1"/>
+
+</rdf:RDF>
+""")
+    f.close()
+    
+    f = open(o2_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/o2.owl"
+         xmlns="http://test.org/o2.owl#">
+
+<owl:Ontology rdf:about="http://test.org/o2.owl"/>
+
+<owl:Class rdf:about="http://test.org/o2.owl#C2">
+  <rdfs:subClassOf rdf:resource="http://test.org/o1.owl#C1"/>
+</owl:Class>
+
+</rdf:RDF>
+""")
+    f.close()
+    
+    PREDEFINED_ONTOLOGIES["http://test.org/o2.owl"] = o2_f
+    
+    o1 = w.get_ontology(o1_f).load()
+    
+    assert len(list(o1.C1.subclasses())) == 1
+    
     
   def test_class_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")

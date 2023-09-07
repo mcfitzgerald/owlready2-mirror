@@ -747,6 +747,11 @@ version 2 - 0.44
   - Fix subproperties parent classes when destroying a property
   - Fix loading of TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
     
+version 2 - 0.45
+****************
+
+* The PREDEFINED_ONTOLOGIES global dictionary can now be used to map ontology IRI to arbitrary local pathes.
+  
     
 Links
 -----
