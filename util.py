@@ -24,12 +24,19 @@
 
 class FTS(str):
   __slots__ = ["lang"]
-  def __new__(Class, s, lang = ""): return str.__new__(Class, s.replace(".", '''"."''').replace("'", '''"'"''').replace("-", '''"-"''').replace("+", '''"+"''').replace(",", '''","''').replace("/", '''"/"''').replace("%", '''"%"''').replace("(", '''"("''').replace(")", '''")"''').replace("[", '''"["''').replace("]", '''"]"'''))
+  #def __new__(Class, s, lang = ""): return str.__new__(Class, s.replace(".", '''"."''').replace("'", '''"'"''').replace("-", '''"-"''').replace("+", '''"+"''').replace(",", '''","''').replace("/", '''"/"''').replace("%", '''"%"''').replace("(", '''"("''').replace(")", '''")"''').replace("[", '''"["''').replace("]", '''"]"''').replace(":", '''":"'''))
+  #def __new__(Class, s, lang = ""): return str.__new__(Class, '"%s"' % s)
+  def __new__(Class, s, lang = ""): return str.__new__(Class, " ".join(('"%s"*' % i[:-1]) if i.endswith("*") else ('"%s"' % i) for i in s.split()))
   
   def __init__(self, s, lang = ""):
     str.__init__(self)
     self.lang = lang
-
+    
+class FTSSqlite3Phrase(FTS):
+  __slots__ = ["lang"]
+  def __new__(Class, s, lang = ""): return str.__new__(FTSSqlite3Phrase, s)
+  
+  
 class NumS(object):
   _OPERATORS = { "<", ">", ">=", "<=", "=", "!=" }
   def __init__(self, *operators_and_values):
