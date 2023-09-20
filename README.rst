@@ -755,7 +755,8 @@ version 2 - 0.45
 * Bugfixes:
   * Fix set_name() on property when python_name is the same as name
   * Fix some special characters (e.g. :) and keyword (e.g. OR) in FTS search
-    
+  * Fix literal with no datatype (should be considered as string, see https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal
+  
 Links
 -----
 

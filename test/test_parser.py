@@ -75,7 +75,7 @@ def make_variants(orig_filename, force_variant = None):
     print("Test %s %s ..." % (orig_filename, "owlapi-owlxml"))
     rm("/tmp/t.rdf")
     owlapi(orig_filename, "/tmp/t.rdf", "owl")
-
+    
     owlapi("/tmp/t.rdf", "/tmp/control.rdf", "rdf")
     rapper("/tmp/control.rdf", "/tmp/control.nt")
     yield "owlapi-owlxml"
@@ -115,9 +115,15 @@ def test(filename, variant):
   onto.save("/tmp/py.nt",  format = "ntriples");\
   onto.save("/tmp/py.rdf", format = "rdfxml");\
   '""")
-  
+
+  option = ""
+  if variant == "owlapi-owlxml":
+    # OWLAPI is bugged and replace plain literals by unspecified datatypes,
+    # which are actually considered as string in RDF spec.
+    option = " --ignore_plain_literal"
+    
   rm("/tmp/log")
-  do("python %s/../ntriples_diff.py /tmp/control.nt /tmp/py.nt > /tmp/log" % HERE)
+  do("python %s/../ntriples_diff.py%s /tmp/control.nt /tmp/py.nt > /tmp/log" % (HERE, option))
   s = open("/tmp/log").read()
   if s.strip() != "":
     print("    FAILED (ntriples)")
@@ -127,7 +133,7 @@ def test(filename, variant):
   rapper("/tmp/py.rdf", "/tmp/py.nt")
   
   rm("/tmp/log")
-  do("python %s/../ntriples_diff.py /tmp/control.nt /tmp/py.nt > /tmp/log" % HERE)
+  do("python %s/../ntriples_diff.py%s /tmp/control.nt /tmp/py.nt > /tmp/log" % (HERE, option))
   s = open("/tmp/log").read()
   if s.strip() != "":
     print("    FAILED (rdfxml)")

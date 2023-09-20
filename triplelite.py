@@ -885,7 +885,7 @@ class SubGraph(BaseSubGraph):
       cur.execute("DELETE FROM datas WHERE c=?", (self.c,))
       
     # Re-implement _abbreviate() for speed and blank node support
-    abbrevs = { "" : 0 }
+    abbrevs = { "" : 60 }
     current_resource = max(self.execute("SELECT MAX(storid) FROM resources").fetchone()[0], 300) # First 300 values are reserved
     def _abbreviate(iri):
         nonlocal current_resource
@@ -914,7 +914,7 @@ class SubGraph(BaseSubGraph):
         new_abbrevs.clear()
         
     def insert_datas(triples):
-      datas = [(_abbreviate(s), _abbreviate(p), o, _abbreviate(d) if (d and (not d.startswith("@"))) else d or 0) for s, p, o, d in triples]
+      datas = [(_abbreviate(s), _abbreviate(p), o, _abbreviate(d) if (d and (not d.startswith("@"))) else d or 60) for s, p, o, d in triples]
       cur.executemany("INSERT OR IGNORE INTO datas VALUES (%s,?,?,?,?)" % self.c, datas)
       if new_abbrevs:
         cur.executemany("INSERT INTO resources VALUES (?,?)", new_abbrevs)
@@ -1004,7 +1004,8 @@ class SubGraph(BaseSubGraph):
       
     def on_prepare_data(s, p, o, d):
       if isinstance(s, str): s = _abbreviate(s)
-      if d and (not d.startswith("@")): d = _abbreviate(d)
+      if   d and (not d.startswith("@")): d = _abbreviate(d)
+      elif d == 0: d = 60 # Replace missing datatype by string
       datas.append((s, _abbreviate(p), o, d or 0))
       if len(datas) > 1000000: insert_datas()
       

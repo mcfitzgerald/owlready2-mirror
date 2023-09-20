@@ -962,6 +962,8 @@ class Test(BaseTest, unittest.TestCase):
 
     assert w["http://lesfleursdunormal.fr/static/_downloads/bacteria.owl#Bacterium"]
     
+
+    
     
   def test_class_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
@@ -6829,6 +6831,45 @@ ask where
     x = onto2.c1.p[0]
     assert isinstance(x, AnyURI)
     assert x.value == "xxx"
+
+  def test_datatype_5(self):
+    w    = self.new_world()
+    o1_f = self.new_tmp_file()
+    
+    f = open(o1_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/id.rdf"
+         xmlns="http://test.org/id.rdf#">
+
+<owl:Ontology rdf:about="http://test.org/id.rdf"/>
+
+<owl:DatatypeProperty rdf:about="#prop"/>
+
+<owl:Class rdf:about="#C">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:NamedIndividual rdf:about="#c1">
+  <rdf:type rdf:resource="#C"/>
+  <prop>ex1</prop>
+</owl:NamedIndividual>
+
+</rdf:RDF>""")
+    f.close()
+    
+    o1 = w.get_ontology(o1_f).load()
+    
+    o1.prop[o1.c1] = ["ex2"]
+    
+    assert o1.prop[o1.c1] == ["ex2"]
+    assert o1.c1.prop     == ["ex2"]
+    del o1.c1.prop
+    assert o1.prop[o1.c1] == ["ex2"]
+    assert o1.c1.prop     == ["ex2"]
     
     
   def test_inverse_1(self):
