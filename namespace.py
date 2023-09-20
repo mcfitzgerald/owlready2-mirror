@@ -932,7 +932,8 @@ class Ontology(Namespace, _GraphManager):
     
     f = PREDEFINED_ONTOLOGIES.get(self._base_iri) or PREDEFINED_ONTOLOGIES.get(self._base_iri[:-1])
     if f:
-      if not os.path.isabs(f): f = os.path.join(os.path.dirname(__file__), "ontos", f)
+      if   f.startswith(("http://", "https://")): pass
+      elif not os.path.isabs(f): f = os.path.join(os.path.dirname(__file__), "ontos", f)
     elif not fileobj:
       f = fileobj or _get_onto_file(self._orig_base_iri, self.name, "r", only_local)
     else:
