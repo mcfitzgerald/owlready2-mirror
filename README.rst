@@ -757,6 +757,7 @@ version 2 - 0.45
   * Fix some special characters (e.g. :) and keyword (e.g. OR) in FTS search
   * Fix literal with no datatype (should be considered as string, see https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal
   * Fix wrong inheritance of TransitiveProperty, ReflexiveProperty and SymmetricProperty
+  * Raise an error when creating a new ontology inside a with ontology:... block
     
 Links
 -----

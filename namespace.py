@@ -808,8 +808,9 @@ class Ontology(Namespace, _GraphManager):
 
       if (not LOADING) and (not self.graph is None):
         if not self._has_obj_triple_spo(self.storid, rdf_type, owl_ontology):
+          if CURRENT_NAMESPACES.get(): raise ValueError("Cannot create a new ontology inside a with onto:... block!")
           self._add_obj_triple_spo(self.storid, rdf_type, owl_ontology)
-
+            
       if not self.world._rdflib_store is None: self.world._rdflib_store._add_onto(self)
       
     finally:
