@@ -327,14 +327,14 @@ class EntityClass(type):
     if include_constructs:
       for parent in Class.is_a:
         if isinstance(parent, EntityClass):
-          if not parent in s:
+          if (not parent in s) and (not parent in _NON_INHERITED):
             parent._fill_ancestors(s, True, True)
         elif include_constructs and (not parent is object):
           if not parent in s: s.add(parent)
     else:
       for parent in Class.__bases__:
         if isinstance(parent, EntityClass):
-          if not parent in s:
+          if (not parent in s) and (not parent in _NON_INHERITED):
             parent._fill_ancestors(s, True, False)
             
   def _fill_descendants(Class, s, include_self, only_loaded, world, onto):
@@ -407,7 +407,20 @@ class EntityClass(type):
         if not construct is None:
           yield construct
           
+_NON_INHERITED = set()
+          
 def issubclass_owlready(Class, Parent_or_tuple):
+  if Parent_or_tuple in _NON_INHERITED:
+    return Parent_or_tuple in Class.is_a
+  
+  if isinstance(Parent_or_tuple, tuple):
+    found = False
+    for Parent in Parent_or_tuple:
+      if Parent in _NON_INHERITED:
+        found = True
+        if Parent in Class.is_a: return True
+    Parent_or_tuple = tuple(Parent for Parent in Parent_or_tuple if not Parent in _NON_INHERITED)
+    
   try:
     if issubclass_python(Class, Parent_or_tuple): return True
   except TypeError: return False

@@ -1616,6 +1616,30 @@ class Test(BaseTest, unittest.TestCase):
       o8 = O(s = [o5])
       
     r = set(o6.q.indirect())
+    print(r)
+    assert r == { o5, o1 }
+    
+  def test_individual_15_2(self):
+    world   = self.new_world()
+    o       = world.get_ontology("http://www.test.org/test.owl")
+
+    with o:
+      class O(Thing): pass
+      class p(O >> O, TransitiveProperty): pass
+      class q(p,      TransitiveProperty): pass
+      class s(q,      TransitiveProperty): pass
+      
+      o1 = O()
+      o2 = O()
+      o3 = O()
+      o4 = O(s = [o3])
+      o5 = O(q = [o4])
+      o6 = O(s = [o5], q = [o1], p = [o2])
+      o7 = O()
+      o8 = O(s = [o5])
+      
+    r = set(o6.q.indirect())
+    print(r)
     assert r == { o5, o1, o4, o3 }
     
   def test_individual_16(self):
@@ -2988,7 +3012,30 @@ class Test(BaseTest, unittest.TestCase):
     p.name = "p2"
     c1.p2 = 0
     assert c1.get_properties() == { p }
+
+  def test_prop_60(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
     
+    with onto:
+      class p (DataProperty, TransitiveProperty): pass
+      class p2(p): pass
+      class p3(p, TransitiveProperty): pass
+      class p4(p, TransitiveProperty): pass
+      
+      assert TransitiveProperty in p.is_a
+      assert issubclass(p, TransitiveProperty)
+      
+      assert not TransitiveProperty in p2.is_a
+      assert not issubclass(p2, TransitiveProperty)
+      
+      assert TransitiveProperty in p3.is_a
+      assert issubclass(p3, TransitiveProperty)
+      
+      assert TransitiveProperty in p4.is_a
+      assert issubclass(p4, TransitiveProperty)
+      
+      
   def test_prop_inverse_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
     assert n.price.inverse_property is None

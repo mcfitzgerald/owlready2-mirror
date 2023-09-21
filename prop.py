@@ -21,6 +21,7 @@ import weakref
 
 from owlready2.namespace  import *
 from owlready2.entity     import *
+from owlready2.entity     import _NON_INHERITED
 from owlready2.base       import _universal_abbrev_2_datatype, _universal_datatype_2_abbrev
 
 _NEXT_DOMAIN_RANGE = ContextVar("_NEXT_DOMAIN_RANGE", default = None)
@@ -897,7 +898,7 @@ class IrreflexiveProperty      (Property): namespace = owl
 
 _CLASS_PROPS = { DataProperty, ObjectProperty }
 _TYPE_PROPS  = { FunctionalProperty, InverseFunctionalProperty, TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty }
-
+_NON_INHERITED.update((TransitiveProperty, ReflexiveProperty, SymmetricProperty))
 
 
 
