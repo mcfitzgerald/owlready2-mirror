@@ -82,7 +82,6 @@ class AnnotatedRelation(object):
     SELECT DISTINCT ?p { ?x owl:annotatedSource ??1 ; owl:annotatedProperty ??2 ; owl:annotatedTarget ??3 ; ?p ?o .
     FILTER(?p NOT IN (owl:annotatedSource, owl:annotatedProperty, owl:annotatedTarget, rdf:type)) }""",
                                                            [self._s_storid, self._p_storid, self._o]) }
-  
     
   def __getattr__(self, attr):
     Prop = self.namespace.world._props.get(attr)

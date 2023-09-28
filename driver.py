@@ -157,7 +157,7 @@ class BaseSubGraph(BaseGraph):
           owlready2_optimized.parse_ntriples(f, queue, default_base, 800000)
           
         else:
-          splitter = re.compile("\s")
+          splitter = re.compile("\\s")
           objs  = []
           datas = []
           line  = f.readline().decode("utf8")
