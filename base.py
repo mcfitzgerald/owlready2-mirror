@@ -123,7 +123,7 @@ DONT_COPY_BN = Environment()
 LOADING = Environment()
 LOADING.__enter__() # Avoid creating triple when creating base classes like Thing
 
-    
+
 _universal_abbrev_2_datatype = {}
 _universal_datatype_2_abbrev = {}
 
@@ -310,7 +310,6 @@ owlready_concrete            = _universal_abbrev("http://www.lesfleursdunormal.f
 #_universal_abbrev_2_datatype[rdf_langstring] = locstr
 _universal_abbrev_datatype(locstr, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")
 rdf_langstring = _universal_datatype_2_abbrev[locstr]
-print(owlready_concrete, rdf_langstring)
 
 #xsd_duration                 = _universal_abbrev("http://www.w3.org/2001/XMLSchema#duration")
 _universal_abbrev_datatype(datetime.timedelta,
