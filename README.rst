@@ -759,6 +759,7 @@ version 2 - 0.45
   * Fix wrong inheritance of TransitiveProperty, ReflexiveProperty and SymmetricProperty
   * Fix 'DeprecationWarning: invalid escape sequence' in regexp
   * Raise an error when creating a new ontology inside a with ontology:... block
+  * Use rdf:langString for locstr (was rdf:plainLiteral)
     
 Links
 -----
