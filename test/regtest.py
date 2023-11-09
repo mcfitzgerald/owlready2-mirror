@@ -4293,7 +4293,7 @@ I took a placebo
   def test_annotation_12(self):
     n = get_ontology("http://www.test.org/test_annot_literal.owl").load()
     
-    assert set(n.C.classDescription) == { locstr("Annotation value"), 8, locstr("Annotation with lang", "en") }
+    assert set(n.C.classDescription) == { plainliteral("Annotation value"), 8, locstr("Annotation with lang", "en") }
     
   def test_annotation_13(self):
     n = self.new_ontology()
