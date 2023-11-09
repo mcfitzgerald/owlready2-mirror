@@ -4303,10 +4303,10 @@ I took a placebo
       C.comment.append("eee")
       C.comment.append(locstr("plain literal"))
       C.comment.append(locstr("literal with lang", "en"))
-      
+
     self.assert_triple(C.storid, comment.storid, 8, n._abbreviate("http://www.w3.org/2001/XMLSchema#integer"))
     self.assert_triple(C.storid, comment.storid, "eee", n._abbreviate("http://www.w3.org/2001/XMLSchema#string"))
-    self.assert_triple(C.storid, comment.storid, "plain literal", n._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral"))
+    self.assert_triple(C.storid, comment.storid, "plain literal", n._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"))
     self.assert_triple(C.storid, comment.storid, "literal with lang", "@en")
     
   def test_annotation_14(self):
