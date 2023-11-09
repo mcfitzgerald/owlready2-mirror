@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ["start_observing", "stop_observing", "observe", "unobserve", "isobserved", "coalesced_observations", "InstancesOfClass"]
+__all__ = ["start_observing", "stop_observing", "observe", "unobserve", "isobserved", "emit", "coalesced_observations", "InstancesOfClass"]
 
 import weakref
 
@@ -221,6 +221,13 @@ class CoalescedObservations(object):
   def __init__(self):
     self.level = 0
     self.delayed_observations = set()
+    self.listeners = []
+    
+  def add_listener(self, listener):
+    self.listeners.append(listener)
+      
+  def remove_listener(self, listener):
+    if listener in self.listeners: self.listeners.remove(listener)
     
   def __enter__(self):
     self.level += 1
@@ -236,11 +243,12 @@ class CoalescedObservations(object):
         listener(observation.o, coalesced_changes)
       observation.coalesced_changes.clear()
     self.delayed_observations.clear()
+    for listener in self.listeners: listener()
     
 coalesced_observations = CoalescedObservations()
+
     
-    
-  
+
 def _prepare_tuple_o(o, world):
   if isinstance(o, tuple):
     return (_prepare_tuple_o(o[0], world), o[1] and o[1].storid, *((o[2] is not None) and world._to_rdf(o[2]) or (None, None)))
@@ -266,6 +274,7 @@ def _prepare_args(o, world):
 
 
 def observe(o, listener, world = None):
+  if o is None: return
   if hasattr(o, "observed") and o.observed(listener): return
   
   o, world = _prepare_args(o, world)
@@ -277,6 +286,7 @@ def observe(o, listener, world = None):
   observation.add_listener(listener)
     
 def isobserved(o, listener = None, world = None):
+  if o is None: return False
   if hasattr(o, "is_observed"): return o.is_observed(listener)
   
   o, world = _prepare_args(o, world)
@@ -287,6 +297,7 @@ def isobserved(o, listener = None, world = None):
   else:        return observation and observation.listeners
   
 def unobserve(o, listener = None, world = None):
+  if o is None: return
   if hasattr(o, "unobserved") and o.unobserved(listener): return
   
   o, world = _prepare_args(o, world)
@@ -302,9 +313,14 @@ def unobserve(o, listener = None, world = None):
     if o in world._observations: del world._observations[o]
 
 
+def emit(o, props):
+  if o is None: return
+  observation = o.namespace.world.world._observations.get(o.storid)
+  if observation: observation.call(props)
+  
+
+    
 _INSTANCES_OF_CLASS = {} #weakref.WeakValueDictionary()
-
-
 
 class StoridList(object):
   def __init__(self, namespace, storids):

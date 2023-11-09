@@ -412,7 +412,7 @@ class Graph(BaseMainGraph):
     if self.current_changes != self.db.total_changes:
       self.current_changes = self.db.total_changes
       self.db.commit()
-
+      
   def context_2_user_context(self, c):
     user_c = self.c_2_onto.get(c)
     if user_c is None:
