@@ -164,7 +164,7 @@ _universal_abbrev_datatype(bool, _bool_parser, _bool_unparser, "http://www.w3.or
 _universal_abbrev_datatype(float, None, _number_unparser, "http://www.w3.org/2001/XMLSchema#decimal", "http://www.w3.org/2001/XMLSchema#double", "http://www.w3.org/2001/XMLSchema#float", "http://www.w3.org/2002/07/owl#real")
 _universal_abbrev_datatype(str, None, None, "http://www.w3.org/2001/XMLSchema#string", "http://www.w3.org/2001/XMLSchema#QName", "http://www.w3.org/2001/XMLSchema#NOTATION")
 _universal_abbrev_datatype(normstr, None, None, "http://www.w3.org/2001/XMLSchema#normalizedString", "http://www.w3.org/2001/XMLSchema#anyURI", "http://www.w3.org/2001/XMLSchema#Name", "http://www.w3.org/2001/XMLSchema#NCName", "http://www.w3.org/2001/XMLSchema#language", "http://www.w3.org/2001/XMLSchema#token", "http://www.w3.org/2001/XMLSchema#NMTOKEN", "http://www.w3.org/2001/XMLSchema#ID", "http://www.w3.org/2001/XMLSchema#IDREF", "http://www.w3.org/2001/XMLSchema#ENTITY")
-_universal_abbrev_datatype(locstr, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
+_universal_abbrev_datatype(plainliteral, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
 _universal_abbrev_datatype(datetime.datetime,
                            _parse_datetime,
                            lambda dt: datetime.datetime.isoformat(dt, timespec='milliseconds'),

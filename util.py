@@ -46,6 +46,9 @@ class NumS(object):
     
 class normstr(str):
   __slots__ = []
+  
+class plainliteral(str):
+  __slots__ = []
 
 class locstr(str):
   __slots__ = ["lang"]

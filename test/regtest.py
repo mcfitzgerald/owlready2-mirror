@@ -6918,6 +6918,19 @@ ask where
     assert o1.prop[o1.c1] == ["ex2"]
     assert o1.c1.prop     == ["ex2"]
     
+  def test_datatype_6(self):
+    w = self.new_world()
+    o = w.get_ontology("http://test.org/onto.owl")
+
+    with o:
+      class C(Thing): pass
+      
+    o._add_data_triple_spod(C.storid, comment.storid, "eee", w._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral"))
+    assert C.comment[0].__class__ is plainliteral
+    
+    C.label.append(C.comment[0])
+    assert C.label[0].__class__ is plainliteral
+    
     
   def test_inverse_1(self):
     world = self.new_world()

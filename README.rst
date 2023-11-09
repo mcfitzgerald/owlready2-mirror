@@ -752,6 +752,7 @@ version 2 - 0.45
 
 * The PREDEFINED_ONTOLOGIES global dictionary can now be used to map ontology IRI to arbitrary local pathes or URL.
 * The new FTSSqlite3Phrase() string type can be used to perform FTS search using Sqlite3 special syntax, e.g. default_world.search(label = FTSSqlite3Phrase("Electrocardiographic OR ECG"))
+* Add support for RDF plain literals, via the plainliteral Python datatype.
 * Bugfixes:
   * Fix set_name() on property when python_name is the same as name
   * Fix some special characters (e.g. :) and keyword (e.g. OR) in FTS search

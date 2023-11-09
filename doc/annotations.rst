@@ -229,6 +229,15 @@ The get_lang_first() method return only the first language-specific string found
    However, the contrary is not true: modifying the list of values does **not** update language-specific sublists.
    
 
+Plain literal
+-------------
+
+The plainliteral Python datatype can be used to create RDF plain literal (or to test whether a value is a plain literal):
+
+::
+   >>> Drug.comment.append(plainliteral("A plain literal comment."))
+
+
 
 Creating new classes of annotation
 ----------------------------------

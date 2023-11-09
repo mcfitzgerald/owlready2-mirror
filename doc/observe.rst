@@ -91,6 +91,8 @@ Multiple calls can be coalesced and merged using the coalesced_observations envi
 No call to listeners are emitted inside the "with coalesced_observations" block, and a single call is emitted at the end,
 possibly with more than one property.
 
+In addition, you can add/remove general listener to coalesced_observations, with the add_listener() and remove_listener()
+methods. The general listener is called without argument, whenever a change is done in the quadstore.
 
 
 Stopping observation
