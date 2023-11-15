@@ -115,6 +115,12 @@ If you also want to infer object property values, use the "infer_property_values
 
    >>> sync_reasoner(infer_property_values = True)
 
+If you want to ignore unsupported datatypes, use the "ignore_unsupported_datatypes" parameter:
+
+::
+
+   >>> sync_reasoner(ignore_unsupported_datatypes = True)
+
 To use Pellet instead of HermiT, just use the sync_reasoner_pellet() function instead.
 
 In addition, Pellet also supports the inference of data property values, using the "infer_data_property_values" parameter:

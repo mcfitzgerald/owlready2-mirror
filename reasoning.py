@@ -115,7 +115,7 @@ def _decode(s):
     return s.decode("latin")
     
 
-def sync_reasoner_hermit(x = None, infer_property_values = False, debug = 1, keep_tmp_file = False):
+def sync_reasoner_hermit(x = None, infer_property_values = False, debug = 1, keep_tmp_file = False, ignore_unsupported_datatypes = False):
   if   isinstance(x, World):    world = x
   elif isinstance(x, Ontology): world = x.world
   elif isinstance(x, list):     world = x[0].world
@@ -138,6 +138,7 @@ def sync_reasoner_hermit(x = None, infer_property_values = False, debug = 1, kee
     tmp.close()
     command = [owlready2.JAVA_EXE, "-Xmx%sM" % JAVA_MEMORY, "-cp", _HERMIT_CLASSPATH, "org.semanticweb.HermiT.cli.CommandLine", "-c", "-O", "-D", "-I", "file:///%s" % tmp.name.replace('\\','/')]
     if infer_property_values: command.append("-Y")
+    if ignore_unsupported_datatypes: command.append("--ignoreUnsupportedDatatypes")
     if debug:
       import time
       print("* Owlready2 * Running HermiT...", file = sys.stderr)
