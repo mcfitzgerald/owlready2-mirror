@@ -21,6 +21,7 @@ import weakref
 
 from owlready2.namespace  import *
 from owlready2.entity     import *
+from owlready2.entity     import _NON_INHERITED
 from owlready2.base       import _universal_abbrev_2_datatype, _universal_datatype_2_abbrev
 
 _NEXT_DOMAIN_RANGE = ContextVar("_NEXT_DOMAIN_RANGE", default = None)
@@ -104,7 +105,12 @@ class PropertyClass(EntityClass):
       if not class_property_type is None:
         Prop.class_property_type = class_property_type
         
-        
+  def set_name(Prop, name):
+    change_python_name = Prop._python_name == Prop._name
+    EntityClass.set_name(Prop, name)
+    if change_python_name: Prop.python_name = name
+  name = property(EntityClass.get_name, set_name)
+    
   def _check_update(Prop, onto):
     if onto._has_obj_triple_spo(Prop.storid):
       Prop._range  = None
@@ -892,7 +898,7 @@ class IrreflexiveProperty      (Property): namespace = owl
 
 _CLASS_PROPS = { DataProperty, ObjectProperty }
 _TYPE_PROPS  = { FunctionalProperty, InverseFunctionalProperty, TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty }
-
+_NON_INHERITED.update((TransitiveProperty, ReflexiveProperty, SymmetricProperty))
 
 
 
@@ -901,9 +907,9 @@ def destroy_entity(e, undoable = False):
   if undoable: undoer_objs = []; undoer_datas = []; undoer_bnodes = []; undoer_relations = []
   else:        undoer_objs = undoer_datas = None; undoer_bnodes = None; undoer_relations = None
   
-  if   hasattr(e, "__destroy__"): e.__destroy__(undoer_objs, undoer_datas)
+  if hasattr(e, "__destroy__"): e.__destroy__(undoer_objs, undoer_datas)
   
-  elif isinstance(e, PropertyClass):
+  if isinstance(e, PropertyClass):
     modified_entities = set()
     if   e._owl_type == owl_object_property:
       for s,p,o in e.namespace.world._get_obj_triples_spo_spo(None, e.storid, None):
@@ -948,8 +954,14 @@ def destroy_entity(e, undoable = False):
     o = e.namespace.world._entities.get(storid)
     if o:
       for r in relations:
-        if  (r == rdf_type) or (r == rdfs_subpropertyof) or (r == rdfs_subclassof):
+        if  (r == rdf_type) or (r == rdfs_subclassof):
           parents = [e.namespace.world._to_python(i) for i in e.namespace.world._get_obj_triples_sp_o(storid, r)]
+          o.is_a.reinit([i for i in parents if not i is None and not i is NamedIndividual])
+          if r == rdfs_subclassof:
+            for Subclass in o.descendants(True, True): _FUNCTIONAL_FOR_CACHE.pop(Subclass, None)
+            
+        elif r == rdfs_subpropertyof:
+          parents = [e.namespace.world._to_python(i) for i in e.namespace.world._get_obj_triples_sp_o(storid, rdf_type) if i != owl_object_property] + [e.namespace.world._to_python(i) for i in e.namespace.world._get_obj_triples_sp_o(storid, r)]
           o.is_a.reinit([i for i in parents if not i is None and not i is NamedIndividual])
           if r == rdfs_subclassof:
             for Subclass in o.descendants(True, True): _FUNCTIONAL_FOR_CACHE.pop(Subclass, None)
@@ -957,11 +969,11 @@ def destroy_entity(e, undoable = False):
         elif (r == owl_equivalentproperty) or (r == owl_equivalentindividual):
           if o._equivalent_to._indirect:
             for o2 in o.equivalent_to._indirect: o2._equivalent_to._indirect = None
-            o._equivalent_to._indirect = None
+          o._equivalent_to = None
         elif r == owl_equivalentclass:
           if o.equivalent_to._indirect:
             for o2 in o._equivalent_to._indirect: o2._equivalent_to._indirect = None
-            o._equivalent_to._indirect = None
+          o._equivalent_to = None
           for Subclass in o.descendants(True, True): _FUNCTIONAL_FOR_CACHE.pop(Subclass, None)
           
         elif r == rdf_domain:
@@ -981,7 +993,7 @@ def destroy_entity(e, undoable = False):
                 try:
                   del o.__dict__[inverse_r.python_name]
                 except: pass
-
+                
   e.namespace.world.graph.destroy_entity(e.storid, destroyer, relation_updater, undoer_objs, undoer_datas)
   
   e.namespace.world._entities.pop(e.storid, None)
@@ -1121,7 +1133,7 @@ class IndividualValueList(CallbackListWithLanguage):
         
     elif self._Prop._owl_type == owl_data_property:
       for removed in old - new:
-        obj.namespace.world._del_data_triple_spod(obj.storid, self._Prop.storid, obj.namespace.world._to_rdf(removed)[0], None)
+        obj.namespace.world._del_data_triple_spod(obj.storid, self._Prop.storid, *obj.namespace.world._to_rdf(removed))
         
       for added in new - old:
         obj.namespace.ontology._add_data_triple_spod(obj.storid, self._Prop.storid, *obj.namespace.ontology._to_rdf(added))
@@ -1131,7 +1143,7 @@ class IndividualValueList(CallbackListWithLanguage):
         if hasattr(removed, "storid"):
           obj.namespace.world._del_obj_triple_spo(obj.storid, self._Prop.storid, removed.storid)
         else:
-          obj.namespace.world._del_data_triple_spod(obj.storid, self._Prop.storid, obj.namespace.world._to_rdf(removed)[0], None)
+          obj.namespace.world._del_data_triple_spod(obj.storid, self._Prop.storid, *obj.namespace.world._to_rdf(removed))
           
       for added in new - old:
         if hasattr(added, "storid"):

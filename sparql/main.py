@@ -98,71 +98,30 @@ class Translator(object):
         return "?%s" % r
       sql = re.sub("%s[^ ]*" % self.escape_mark, sub, sql)
       
-    #if sql:
-    #  if   self.main_query.type == "select": nb_sql_parameter = nb_parameter + len(parameter_datatypes)
-    #  else:                                  nb_sql_parameter = len(self.main_query.select_param_indexes)
-    #  sql = self.optimize_sql(sql, nb_sql_parameter)
-    
     if   self.main_query.type == "select":
       return PreparedSelectQuery(self.world, sql, [column.var for column in self.main_query.columns if not column.name.endswith("d")], [column.type for column in self.main_query.columns], nb_parameter, parameter_datatypes)
     
     elif self.main_query.type == "modify":
       select_param_indexes = [i - 1 for i in self.main_query.select_param_indexes]
-      return PreparedModifyQuery(self.world, sql, [column.var for column in self.main_query.columns if not column.name.endswith("d")], [column.type for column in self.main_query.columns], nb_parameter, parameter_datatypes, self.world.get_ontology(self.main_query.ontology_iri.value) if self.main_query.ontology_iri else None, self.parse_inserts_deletes(self.main_query.deletes, self.main_query.columns), self.parse_inserts_deletes(self.main_query.inserts, self.main_query.columns), select_param_indexes)
+      return PreparedModifyQuery(self.world, sql, [column.var for column in self.main_query.columns if not column.name.endswith("d")], [column.type for column in self.main_query.columns], nb_parameter, parameter_datatypes, self.world.get_ontology(self.main_query.ontology_iri.value) if self.main_query.ontology_iri else None, self.parse_inserts_deletes(self.main_query.deletes, self.main_query.columns, False), self.parse_inserts_deletes(self.main_query.inserts, self.main_query.columns, True), select_param_indexes)
     
-    
-  # def optimize_sql(self, sql, nb_sql_parameter):
-  #   plan = list(self.world.graph.execute("""EXPLAIN QUERY PLAN %s""" % sql, (1,) * nb_sql_parameter))
-                
-  #   has_automatic_index = False
-  #   for l in plan:
-  #     match = _RE_AUTOMATIC_INDEX.search(l[3])
-  #     if match:
-  #       table_name = match.group(1)
-  #       index_name = match.group(2)
-  #       table_type = self.table_name_2_type.get(table_name)
-        
-  #       if (table_type == "objs") or (table_type == "datas"):
-  #         if   index_name.startswith("s="): index_name = "index_%s_sp" % table_type
-  #         elif index_name.startswith("o="): index_name = "index_%s_op" % table_type
-  #         else: continue
-          
-  #         print("OPTIMIZE!!!", l, table_type, table_name, "=>", index_name)
-  #         table_def = "%s %s" % (table_type, table_name)
-  #         sql = sql.replace(table_def, "%s INDEXED BY %s" % (table_def, index_name), 1)
-  #   return sql
-    
-  # def optimize_sql(self, sql):
-  #   # Avoid Sqlite3 AUTOMATIC INDEX when a similar index can be used.
-  #   plan = list(self.world.graph.execute("""EXPLAIN QUERY PLAN %s""" % sql))
-  #   #for l in plan:
-  #     #if (" USING AUTOMATIC " in l[3]) and not (" TABLE " in l[3]): break
-  #   #else:
-  #   try:
-  #     self.world.graph.execute("PRAGMA automatic_index = false")
-  #     plan = list(self.world.graph.execute("""EXPLAIN QUERY PLAN %s""" % sql))
-  #   finally:
-  #     self.world.graph.execute("PRAGMA automatic_index = true")
-      
-  #   for l in plan:
-  #       match = _RE_NORMAL_INDEX.search(l[3])
-  #       if match:
-  #         table_type = match.group(1)
-  #         table_name = match.group(2)
-  #         index_name = match.group(4)
-  #         if table_name == "q": continue # Recursive hard-coded preliminary queries
-  #         #if ("%s INDEXED" % table_name) in sql: continue
-  #         table_def = "%s %s" % (table_type, table_name)
-  #         #print("OPTIMIZE!!!", l, table_type, table_name, index_name)
-  #         sql = sql.replace(table_def, "%s INDEXED BY %s" % (table_def, index_name), 1)
-  #   return sql
     
   
-  def parse_inserts_deletes(self, triples, columns):
+  def parse_inserts_deletes(self, triples, columns, is_insert):
     var_2_column = { column.var : column for column in self.main_query.columns if not column.name.endswith("d") }
     r = []
+    o_pos = 4 if is_insert else 3
     for triple0 in triples:
-      triple = []
+      if is_insert:
+        if triple0[0]: # graph/onto
+          if   triple0[0].name == "VAR":   triple = [("vars",  var_2_column[triple0[0].value].index)]
+          else:                            triple = [("onto",  triple0[0].value)]
+        else:
+          triple = [(None, None)]
+        triple0 = triple0[1:]
+      else:
+        triple = []
+        
       for x in triple0:
         if   hasattr(x, "storid"):
           triple.append(("objs", x.storid))
@@ -172,14 +131,14 @@ class Translator(object):
           else: # a normal var
             column = var_2_column[x.value]
             triple.append(("vars", column.index))
-            if len(triple) == 3: # in 'o' position => can be objs or datas!
+            if len(triple) == o_pos: # in 'o' position => can be objs or datas!
               if column.index + 1 < len(columns):
                 next_column = columns[column.index + 1]
                 if next_column.name.endswith("d"):
                   triple.append(("vars", next_column.index))
         elif x.name == "PARAM":
           triple.append(("param", x.number - 1))
-          if len(triple) == 3: # in 'o' position => can be datas!
+          if len(triple) == o_pos: # in 'o' position => can be datas!
             triple.append(("paramdatatype", x.number - 1))
         else:
           if   isinstance(x.value, locstr):
@@ -193,7 +152,7 @@ class Translator(object):
             triple.append(("datas", d2))
             
       r.append(triple)
-
+      
     return r
   
   def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False):
@@ -574,7 +533,7 @@ class PreparedModifyQuery(PreparedQuery):
         #print("ADD", insert, triple)
         added_triples.append(triple)
         
-    if added_triples: self.world._add_triples_with_update(self.ontology, added_triples)
+    if added_triples: self.world._add_quads_with_update(self.ontology, added_triples)
     return nb_match
   
     

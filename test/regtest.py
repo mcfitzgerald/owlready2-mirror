@@ -880,6 +880,90 @@ class Test(BaseTest, unittest.TestCase):
     assert C.namespace is n
     assert n.C is C
     
+  def test_ontology_36(self):
+    w = self.new_world()
+    
+    o1_f = self.new_tmp_file()
+    o2_f = self.new_tmp_file()
+    
+    f = open(o1_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/o1.owl"
+         xmlns="http://test.org/o1.owl#">
+
+<owl:Ontology rdf:about="http://test.org/o1.owl">
+  <owl:imports rdf:resource="http://test.org/o2.owl"/>
+</owl:Ontology>
+    
+<owl:Class rdf:about="http://test.org/o1.owl#C1"/>
+
+</rdf:RDF>
+""")
+    f.close()
+    
+    f = open(o2_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/o2.owl"
+         xmlns="http://test.org/o2.owl#">
+
+<owl:Ontology rdf:about="http://test.org/o2.owl"/>
+
+<owl:Class rdf:about="http://test.org/o2.owl#C2">
+  <rdfs:subClassOf rdf:resource="http://test.org/o1.owl#C1"/>
+</owl:Class>
+
+</rdf:RDF>
+""")
+    f.close()
+    
+    PREDEFINED_ONTOLOGIES["http://test.org/o2.owl"] = o2_f
+    
+    o1 = w.get_ontology(o1_f).load()
+    
+    assert len(list(o1.C1.subclasses())) == 1
+    
+  def test_ontology_37(self):
+    w = self.new_world()
+    
+    o1_f = self.new_tmp_file()
+    
+    f = open(o1_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/o1.owl"
+         xmlns="http://test.org/o1.owl#">
+
+<owl:Ontology rdf:about="http://test.org/o1.owl">
+  <owl:imports rdf:resource="http://test.org/o2.owl"/>
+</owl:Ontology>
+    
+<owl:Class rdf:about="http://test.org/o1.owl#C1"/>
+
+</rdf:RDF>
+""")
+    f.close()
+    
+    PREDEFINED_ONTOLOGIES["http://test.org/o2.owl"] = "http://lesfleursdunormal.fr/static/_downloads/bacteria.owl"
+    
+    assert not w["http://lesfleursdunormal.fr/static/_downloads/bacteria.owl#Bacterium"]
+    
+    o1 = w.get_ontology(o1_f).load()
+
+    assert w["http://lesfleursdunormal.fr/static/_downloads/bacteria.owl#Bacterium"]
+    
+
+    
     
   def test_class_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
@@ -1287,6 +1371,31 @@ class Test(BaseTest, unittest.TestCase):
       
     assert set(Thing.subclasses(world = w)) == { A, C }
     
+  def test_class_29(self):
+    w = self.new_world()
+    o = w.get_ontology("http://www.test.org/test")
+    with o:
+      class Test1(Thing): pass
+      class Test2(Thing): pass
+      Test2.equivalent_to = [Test1]
+      
+    destroy_entity(Test1)
+    assert Test2.equivalent_to == []
+    
+  def test_class_30(self):
+    w = self.new_world()
+    o = w.get_ontology("http://www.test.org/test")
+    with o:
+      class Test1(Thing): pass
+      class Test2(Thing): pass
+      Test2.equivalent_to = [Test1]
+      
+    undo = destroy_entity(Test1, undoable = True)
+    assert Test2.equivalent_to == []
+    
+    undo()
+    assert Test2.equivalent_to == [Test1]
+    
     
   def test_individual_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
@@ -1507,6 +1616,30 @@ class Test(BaseTest, unittest.TestCase):
       o8 = O(s = [o5])
       
     r = set(o6.q.indirect())
+    print(r)
+    assert r == { o5, o1 }
+    
+  def test_individual_15_2(self):
+    world   = self.new_world()
+    o       = world.get_ontology("http://www.test.org/test.owl")
+
+    with o:
+      class O(Thing): pass
+      class p(O >> O, TransitiveProperty): pass
+      class q(p,      TransitiveProperty): pass
+      class s(q,      TransitiveProperty): pass
+      
+      o1 = O()
+      o2 = O()
+      o3 = O()
+      o4 = O(s = [o3])
+      o5 = O(q = [o4])
+      o6 = O(s = [o5], q = [o1], p = [o2])
+      o7 = O()
+      o8 = O(s = [o5])
+      
+    r = set(o6.q.indirect())
+    print(r)
     assert r == { o5, o1, o4, o3 }
     
   def test_individual_16(self):
@@ -2824,7 +2957,85 @@ class Test(BaseTest, unittest.TestCase):
     self.assert_not_triple(c1.storid, p.storid, c3.storid, world = w)
     self.assert_triple    (c1.storid, p.storid, c4.storid, world = w)
     
+  def test_prop_56(self):
+    w  = self.new_world()
+    o1 = w.get_ontology("http://test.org/o1.owl")
+    with o1:
+      class C(Thing): pass
+      class i(C >> int): pass
+      class p(AnnotationProperty): pass
+      
+      c1 = C(p = [locstr("Test", "en"), locstr("Test", "fr")])
+      
+      c1.p.remove(locstr("Test", "en"))
+      assert c1.p == [locstr("Test", "fr")]
+      del c1.p
+      assert c1.p == [locstr("Test", "fr")]
+      
+  def test_prop_57(self):
+    w1 = self.new_world()
+    o  = w1.get_ontology("http://test.org/o.owl")
+    with o:
+      class C(Thing): pass
+      c1 = C()
+      c2 = C()
+    with o.get_namespace("http://test.org/o/prop/"):
+      class p(C >> C): pass
+    c1.p = [c2]
+    temp = self.new_tmp_file()
+    o.save(temp)
     
+    w2 = self.new_world()
+    o  = w2.get_ontology(temp).load()
+    assert o.c1.p == [o.c2]
+      
+  def test_prop_58(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class p(ObjectProperty, FunctionalProperty, InverseFunctionalProperty, ReflexiveProperty, IrreflexiveProperty, SymmetricProperty, AsymmetricProperty, TransitiveProperty): pass
+    f = self.new_tmp_file()
+    onto.save(f)
+
+    world = self.new_world()
+    onto  = world.get_ontology(f).load()
+    assert set(onto.p.is_a) == {ObjectProperty, FunctionalProperty, InverseFunctionalProperty, ReflexiveProperty, IrreflexiveProperty, SymmetricProperty, AsymmetricProperty, TransitiveProperty}
+    
+  def test_prop_59(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p(C >> int, FunctionalProperty): pass
+      
+    c1 = C()
+    p.name = "p2"
+    c1.p2 = 0
+    assert c1.get_properties() == { p }
+
+  def test_prop_60(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    
+    with onto:
+      class p (DataProperty, TransitiveProperty): pass
+      class p2(p): pass
+      class p3(p, TransitiveProperty): pass
+      class p4(p, TransitiveProperty): pass
+      
+      assert TransitiveProperty in p.is_a
+      assert issubclass(p, TransitiveProperty)
+      
+      assert not TransitiveProperty in p2.is_a
+      assert not issubclass(p2, TransitiveProperty)
+      
+      assert TransitiveProperty in p3.is_a
+      assert issubclass(p3, TransitiveProperty)
+      
+      assert TransitiveProperty in p4.is_a
+      assert issubclass(p4, TransitiveProperty)
+      
+      
   def test_prop_inverse_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
     assert n.price.inverse_property is None
@@ -3581,7 +3792,8 @@ I took a placebo
 
     assert set(onto.e.is_a) == set([onto.E, onto.S])
     assert set(onto.e.prop) == set([onto.obj])
-    assert set(onto.e.data_prop) == set([1.0, "english", True])
+
+    assert set(onto.e.data_prop) == set([1.0, locstr("english", "en"), True])
     assert len(onto.e.data_prop) == 3
     
     i = [i for i in onto.e.data_prop if isinstance(i, str)][0]
@@ -3597,7 +3809,7 @@ I took a placebo
     
     assert set(onto.e.is_a) == set([onto.E, onto.S])
     assert set(onto.e.prop) == set([onto.obj])
-    assert set(onto.e.data_prop) == set([1.0, "english", True])
+    assert set(onto.e.data_prop) == set([1.0, locstr("english", "en"), True])
     assert len(onto.e.data_prop) == 3
     
     i = [i for i in onto.e.data_prop if isinstance(i, str)][0]
@@ -3801,9 +4013,12 @@ I took a placebo
     
   def test_annotation_2(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")
-    
+
     assert set(comment[n.ma_pizza, rdf_type, n.Pizza]) == { locstr('Comment on a triple', 'en'), locstr('Commentaire sur un triplet', 'fr') }
     assert comment[n.ma_pizza, rdf_type, n.Pizza].fr == ["Commentaire sur un triplet"]
+
+    assert set(AnnotatedRelation(n.ma_pizza, rdf_type, n.Pizza).comment) == { locstr('Comment on a triple', 'en'), locstr('Commentaire sur un triplet', 'fr') }
+    assert AnnotatedRelation(n.ma_pizza, rdf_type, n.Pizza).comment.fr == ["Commentaire sur un triplet"]
     
   def test_annotation_3(self):
     n = self.new_ontology()
@@ -3820,6 +4035,7 @@ I took a placebo
     assert annot[c1, prop, c2] == []
     
     annot[c1, prop, c2].append("Test")
+    
     annots = None
     for bnode, p, o in n._get_obj_triples_spo_spo(None, rdf_type, owl_axiom):
       if ((n._get_obj_triple_sp_o(bnode, owl_annotatedsource  ) == c1.storid) and
@@ -3838,8 +4054,9 @@ I took a placebo
         annots = { (p, n._to_python(o,d)) for s,p,o,d in n._get_triples_spod_spod(bnode, None, None) if not p in [rdf_type, owl_annotatedsource, owl_annotatedproperty, owl_annotatedtarget] }
         break
     assert annots == { (annot.storid, "Test"), (annot.storid, "Test1") }
-      
+    
     annot2[c1, prop, c2].append("Test2")
+    
     annots = None
     for bnode, p, o in n._get_obj_triples_spo_spo(None, rdf_type, owl_axiom):
       if ((n._get_obj_triple_sp_o(bnode, owl_annotatedsource  ) == c1.storid) and
@@ -3847,6 +4064,7 @@ I took a placebo
           (n._get_obj_triple_sp_o(bnode, owl_annotatedtarget  ) == c2.storid)):
         annots = { (p, n._to_python(o,d)) for s,p,o,d in n._get_triples_spod_spod(bnode, None, None) if not p in [rdf_type, owl_annotatedsource, owl_annotatedproperty, owl_annotatedtarget] }
         break
+      
     assert annots == { (annot.storid, "Test"), (annot.storid, "Test1"), (annot2.storid, "Test2") }
     
     annot[c1, prop, c2].remove("Test")
@@ -3896,7 +4114,7 @@ I took a placebo
         annots = { (p, n._to_python(o,d)) for s,p,o,d in n._get_triples_spod_spod(bnode, None, None, None) if not p in [rdf_type, owl_annotatedsource, owl_annotatedproperty, owl_annotatedtarget] }
         break
     assert annots == { (annot.storid, locstr("Un test", "fr")), (annot.storid, locstr("Un second test", "fr")), (annot.storid, locstr("A test", "en")) }
-    
+
     annot[c1, prop, c2].fr.remove("Un test")
     annots = None
     for bnode, p, o in n._get_obj_triples_spo_spo(None, rdf_type, owl_axiom):
@@ -4075,7 +4293,7 @@ I took a placebo
   def test_annotation_12(self):
     n = get_ontology("http://www.test.org/test_annot_literal.owl").load()
     
-    assert set(n.C.classDescription) == { locstr("Annotation value"), 8, locstr("Annotation with lang", "en") }
+    assert set(n.C.classDescription) == { plainliteral("Annotation value"), 8, locstr("Annotation with lang", "en") }
     
   def test_annotation_13(self):
     n = self.new_ontology()
@@ -4085,10 +4303,10 @@ I took a placebo
       C.comment.append("eee")
       C.comment.append(locstr("plain literal"))
       C.comment.append(locstr("literal with lang", "en"))
-      
+
     self.assert_triple(C.storid, comment.storid, 8, n._abbreviate("http://www.w3.org/2001/XMLSchema#integer"))
     self.assert_triple(C.storid, comment.storid, "eee", n._abbreviate("http://www.w3.org/2001/XMLSchema#string"))
-    self.assert_triple(C.storid, comment.storid, "plain literal", n._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral"))
+    self.assert_triple(C.storid, comment.storid, "plain literal", n._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"))
     self.assert_triple(C.storid, comment.storid, "literal with lang", "@en")
     
   def test_annotation_14(self):
@@ -4117,7 +4335,7 @@ I took a placebo
     onto = world.get_ontology("http://www.semanticweb.org/jiba/ontologies/2018/10/test_datatype_one_of_owlxml.owl").load()
 
     assert onto.d1.p == [1]
-    assert comment[onto.d1, onto.p, 1] == ["Annotation on a triple with a datatype value."]
+    assert comment[onto.d1, onto.p, 1] == [locstr("Annotation on a triple with a datatype value.")]
     assert onto.D.is_a[1].value.instances == [1, 2, 3]
     
   def test_annotation_17(self):
@@ -4170,7 +4388,7 @@ I took a placebo
 
     assert comment[C.is_a[-1]] == ["A comment on a restriction."]
     
-  def test_annotation_19(self):
+  def test_annotation_19_0(self):
     w = self.new_world()
     o = w.get_ontology("http://test.org/onto.owl")
     
@@ -4184,14 +4402,86 @@ I took a placebo
       comment[c1, p, c2].append("commentaire")
       comment[c1, p, c2].append("commentaire 2")
       
-      a = comment[comment[c1, p, c2], comment, "commentaire"]
-      a.append("commentaire d'un commentaire")
+      a = AnnotatedRelation(AnnotatedRelation(c1, p, c2), comment, "commentaire")
+      a.comment.append("commentaire d'un commentaire")
       
       b = comment[a, comment, "commentaire d'un commentaire"]
       b.append("commentaire d'un commentaire d'un commentaire")
 
+      assert comment[a, comment, "commentaire d'un commentaire"] == comment[a.comment, comment, "commentaire d'un commentaire"]
+      
       self.assert_triple(-3, comment.storid, *o._to_rdf("commentaire d'un commentaire d'un commentaire"), world = w)
       
+  def test_annotation_19(self):
+    w = self.new_world()
+    o = w.get_ontology("http://test.org/onto.owl")
+    
+    with o:
+      class C(Thing): pass
+      class p(AnnotationProperty): pass
+      class i(C >> int): pass
+      c1 = C()
+      c1.i = [1]
+      p[c1, i, 1] = [locstr("Test", "en")]
+      p[c1, i, 1].append(locstr("Test", "fr"))
+      assert set(p[c1, i, 1]) == { locstr("Test", "en"), locstr("Test", "fr") }
+      p[c1, i, 1].remove(locstr("Test", "en"))
+      assert p[c1, i, 1] == [locstr("Test", "fr")]
+  
+  def test_annotation_20(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class D(C): pass
+      c1 = C()
+      
+    C.comment = ["C"]
+    assert C.comment == ["C"]
+    assert D.comment == []
+    assert c1.comment == []
+    
+    D.comment = ["D"]
+    assert C.comment == ["C"]
+    assert D.comment == ["D"]
+    assert c1.comment == []
+    
+    c1.comment = ["c1"]
+    assert C.comment == ["C"]
+    assert D.comment == ["D"]
+    assert c1.comment == ["c1"]
+    
+  def test_annotation_21(self):
+    world = self.new_world()
+    onto1 = world.get_ontology("http://test.org/onto1.owl")
+    onto2 = world.get_ontology("http://test.org/onto2.owl")
+    with onto1:
+      class C(Thing): pass
+      class p(C >> int): pass
+      c1 = C(p = [1])
+      comment[c1, p, 1].append("com1")
+      
+    with onto2:
+      comment[c1, p, 1].append("com2")
+      
+    assert set(comment[c1, p, 1]) == { "com1", "com2" }
+    assert set(AnnotatedRelation(c1, p, 1)._bnodes) == { -1, -2 }
+    
+  def test_annotation_22(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      C.label = ["C label"]
+      AnnotatedRelation(C, label, "C label").comment = ["Provisoire"]
+      AnnotatedRelation(AnnotatedRelation(C, label, "C label"), comment, "Provisoire").comment = ["1/1/2023"]
+      
+    assert AnnotatedRelation(AnnotatedRelation(C, label, "C label"), comment, "Provisoire").comment == ["1/1/2023"]
+    
+    self.assert_triple(-2, owl_annotatedsource, -1, world = world)
+    self.assert_triple(-2, owl_annotatedproperty, comment.storid, world = world)
+    
+    
   def test_import_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/2/test_mixed.owl").load()
     
@@ -5317,10 +5607,10 @@ I took a placebo
   def test_format_15(self):
     world = self.new_world()
     onto  = world.get_ontology("http://www.test.org/test_breakline.owl").load()
-    
-    assert onto.C.comment.first() == r"""Comment long
+
+    assert onto.C.comment.first() == locstr(r"""Comment long
 on
-multiple lines with " and ’ and \ and & and < and > and é."""
+multiple lines with " and ’ and \ and & and < and > and é.""", "en")
     
     f = BytesIO()
     onto.save(f, format = "ntriples")
@@ -6588,6 +6878,58 @@ ask where
     x = onto2.c1.p[0]
     assert isinstance(x, AnyURI)
     assert x.value == "xxx"
+
+  def test_datatype_5(self):
+    w    = self.new_world()
+    o1_f = self.new_tmp_file()
+    
+    f = open(o1_f, "w")
+    f.write("""<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://test.org/id.rdf"
+         xmlns="http://test.org/id.rdf#">
+
+<owl:Ontology rdf:about="http://test.org/id.rdf"/>
+
+<owl:DatatypeProperty rdf:about="#prop"/>
+
+<owl:Class rdf:about="#C">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:NamedIndividual rdf:about="#c1">
+  <rdf:type rdf:resource="#C"/>
+  <prop>ex1</prop>
+</owl:NamedIndividual>
+
+</rdf:RDF>""")
+    f.close()
+    
+    o1 = w.get_ontology(o1_f).load()
+    
+    o1.prop[o1.c1] = ["ex2"]
+    
+    assert o1.prop[o1.c1] == ["ex2"]
+    assert o1.c1.prop     == ["ex2"]
+    del o1.c1.prop
+    assert o1.prop[o1.c1] == ["ex2"]
+    assert o1.c1.prop     == ["ex2"]
+    
+  def test_datatype_6(self):
+    w = self.new_world()
+    o = w.get_ontology("http://test.org/onto.owl")
+
+    with o:
+      class C(Thing): pass
+      
+    o._add_data_triple_spod(C.storid, comment.storid, "eee", w._abbreviate("http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral"))
+    assert C.comment[0].__class__ is plainliteral
+    
+    C.label.append(C.comment[0])
+    assert C.label[0].__class__ is plainliteral
     
     
   def test_inverse_1(self):
@@ -7161,6 +7503,19 @@ ask where
     
     assert c.c_to_b == []  # asserts to False
     
+  def test_destroy_27(self):
+    w  = self.new_world()
+    o1 = w.get_ontology("http://test.org/test")
+    
+    with o1:
+      class prop1(ObjectProperty): pass
+      class prop3(FunctionalProperty, ReflexiveProperty, prop1): pass
+    destroy_entity(prop1)
+    
+    assert not issubclass(prop3, prop1)
+    assert issubclass(prop3, FunctionalProperty)
+    assert issubclass(prop3, ReflexiveProperty)
+    
     
     
   def test_observe_1(self):
@@ -7176,15 +7531,16 @@ ask where
       class ps(C >> int): pass
       
     c = C()
+
+    before_func = onto._add_obj_triple_raw_spo
     
     listened = "\n"
-    def listener(o, p):
+    def listener(o, ps):
       nonlocal listened
-      listened += "%s %s\n" % (w._unabbreviate(o), w._unabbreviate(p))
-      #print("%s %s %s\n" % (w._unabbreviate(o), w._unabbreviate(p), c.ps))
+      listened += "%s %s\n" % (w._unabbreviate(o), " ".join(w._unabbreviate(p) for p in sorted(ps)))
     owlready2.observe.start_observing(onto)
     owlready2.observe.observe(c, listener)
-
+    
     c.ps = [1, 2, 3]
     
     c.ps.remove(2)
@@ -7209,87 +7565,8 @@ http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type
 http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type
 """
     
-  def test_observe_2(self):
-    import owlready2.observe
-    
-    w = self.new_world()
-    onto = w.get_ontology("http://test.org/t.owl")
-    
-    with onto:
-      class C(Thing): pass
-      class D(Thing): pass
-      class ps(C >> int): pass
-      
-    c = C()
-    c.ps = [1, 2, 3]
-    
-    listened = set()
-    def listener(o, ps):
-      for p in ps:
-        listened.add("%s %s" % (w._unabbreviate(o), w._unabbreviate(p)))
-    owlready2.observe.start_observing(onto)
-    owlready2.observe.observe(c.storid, listener, True, w)
-    
-    c.ps.remove(2)
-    c.ps.append(4)
-    
-    c.is_a = [D]
-    
-    assert not listened
-    
-    owlready2.observe.scan_collapsed_changes()
-
-    assert listened == {"http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://test.org/t.owl#c1 http://test.org/t.owl#ps"}
-    
-    listened = set()
-    owlready2.observe.scan_collapsed_changes()
-    assert not listened # Now empty
-    
-    owlready2.observe.unobserve(c.storid, listener, w)
-    c.ps.append(5)
-    owlready2.observe.scan_collapsed_changes()
-    assert not listened
-    
-  def test_observe_3(self):
-    import owlready2.observe
-    
-    w = self.new_world()
-    onto = w.get_ontology("http://test.org/t.owl")
-    
-    with onto:
-      class C(Thing): pass
-      class D(Thing): pass
-      class ps(C >> int): pass
-      
-    c = C()
-    c.ps = [1, 2, 3]
-    
-    listened = set()
-    def listener(o, ps):
-      for p in ps:
-        listened.add("%s %s" % (w._unabbreviate(o), w._unabbreviate(p)))
-    owlready2.observe.start_observing(onto)
-    owlready2.observe.observe(c, listener, True)
-    
-    c.ps.remove(2)
-    c.ps.append(4)
-    
-    c.is_a = [D]
-    
-    assert not listened
-    
-    owlready2.observe.scan_collapsed_changes()
-    
-    assert listened == {"http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://test.org/t.owl#c1 http://test.org/t.owl#ps"}
-    
-    listened = set()
-    owlready2.observe.scan_collapsed_changes()
-    assert not listened # Now empty
-    
-    owlready2.observe.unobserve(c, listener)
-    c.ps.append(5)
-    owlready2.observe.scan_collapsed_changes()
-    assert not listened
+    owlready2.observe.stop_observing(onto)
+    assert onto._add_obj_triple_raw_spo == before_func
     
   def disabled_test_observe_4(self):
     import owlready2.observe
@@ -7366,13 +7643,13 @@ http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type
       listened.extend(diffs)
     l = owlready2.observe.InstancesOfClass(C, use_observe = True)
     owlready2.observe.start_observing(onto)
-    owlready2.observe.observe(l, listener, True)
+    owlready2.observe.observe(l, listener, None, True)
     
     c3 = C()
     c4 = C()
     
     assert listened == []
-    owlready2.observe.scan_collapsed_changes()
+    owlready2.observe.emit_collapsed_changes()
     
     assert listened[0][0] == "Inverse(http://www.w3.org/1999/02/22-rdf-syntax-ns#type)"
     assert list(listened[0][1]) == [c1, c2, c3, c4]
@@ -7416,15 +7693,110 @@ http://test.org/t.owl#c1 http://www.w3.org/1999/02/22-rdf-syntax-ns#type
       c2 = C()
       
     listened = "\n"
-    def listener(o, p):
+    def listener(o, ps):
       nonlocal listened
-      listened += "%s %s\n" % (w._unabbreviate(o), w._unabbreviate(p))
+      listened += "%s %s\n" % (w._unabbreviate(o), " ".join(w._unabbreviate(p) for p in sorted(ps)))
     owlready2.observe.start_observing(onto)
     owlready2.observe.observe(c2, listener)
     
     c1.p.append(c2)
 
     assert listened == """\nhttp://test.org/t.owl#c2 http://test.org/t.owl#i\n"""
+    
+  def test_observe_9(self):
+    import owlready2.observe
+    
+    w = self.new_world()
+    onto = w.get_ontology("http://test.org/t.owl")
+    
+    with onto:
+      class C(Thing): pass
+      class p(C >> int): pass
+      c1 = C(p = [1])
+      
+    listened = "\n"
+    def unabbreviate(o):
+      if isinstance(o, tuple):
+        o2 = [None] * 3
+        o2[0] = unabbreviate(o[0])
+        if not o[1] is None: o2[1] = w._unabbreviate(o[1])
+        if not o[2] is None: o2[2] = w._to_python(o[2], o[3])
+        return tuple(o2)
+      else:
+        return w._unabbreviate(o)
+    def listener(o, ps):
+      nonlocal listened
+      o2 = unabbreviate(o)
+      listened += "(%s) %s\n" % (" ".join(str(i) for i in o2), " ".join(w._unabbreviate(p) for p in sorted(ps)))
+    owlready2.observe.observe((c1, p, 1), listener)
+    
+    comment[c1, p, 1] = ["ok"]
+    assert listened == '\n(http://test.org/t.owl#c1 http://test.org/t.owl#p 1) http://www.w3.org/2000/01/rdf-schema#comment\n'
+    
+    listened = "\n"
+    comment[c1, p, 1].append(C)
+    assert listened == '\n(http://test.org/t.owl#c1 http://test.org/t.owl#p 1) http://www.w3.org/2000/01/rdf-schema#comment\n'
+    
+    listened = "\n"
+    comment[c1, p, 1] = []
+    assert listened == '\n(http://test.org/t.owl#c1 http://test.org/t.owl#p 1) http://www.w3.org/2000/01/rdf-schema#comment\n(http://test.org/t.owl#c1 http://test.org/t.owl#p 1) http://www.w3.org/2000/01/rdf-schema#comment\n'
+    
+    owlready2.observe.unobserve((c1, p, 1), listener)
+    
+    listened = "\n"
+    comment[c1, p, 1].append("x")
+    assert listened == """\n"""
+    
+    owlready2.observe.observe((c1, None, None), listener)
+    
+    listened = "\n"
+    label[c1, p, 1].append("ok")
+    assert listened == '\n(http://test.org/t.owl#c1 None None) http://test.org/t.owl#p\n'
+    
+    owlready2.observe.observe(((c1, p, 1), label, "ok"), listener)
+    
+    listened = "\n"
+    comment[AnnotatedRelation(c1, p, 1), label, "ok"] = ["ok2"]
+    assert listened == """\n(('http://test.org/t.owl#c1', 'http://test.org/t.owl#p', 1) http://www.w3.org/2000/01/rdf-schema#label ok) http://www.w3.org/2000/01/rdf-schema#comment\n"""
+    
+            
+  def test_observe_10(self):
+    import owlready2.observe
+    
+    w = self.new_world()
+    onto = w.get_ontology("http://test.org/t.owl")
+    owlready2.observe.start_observing(w)
+    
+    with onto:
+      class C(Thing): pass
+      class p(C >> int): pass
+      class q(C >> int): pass
+      c1 = C(p = [1])
+      
+    listened = "\n"
+    def listener(o, ps):
+      nonlocal listened
+      listened += "%s %s\n" % (w._unabbreviate(o), " ".join(w._unabbreviate(p) for p in sorted(ps)))
+    owlready2.observe.observe(c1, listener)
+    
+    c1.p.append(2)
+    assert listened == """\nhttp://test.org/t.owl#c1 http://test.org/t.owl#p\n"""
+    
+    c1.q.append(3)
+    assert listened == """\nhttp://test.org/t.owl#c1 http://test.org/t.owl#p\nhttp://test.org/t.owl#c1 http://test.org/t.owl#q\n"""
+    
+    listened = "\n"
+    
+    with owlready2.observe.coalesced_observations:
+      c1.p.append(4)
+      c1.q.append(5)
+      c1.q.append(6)
+      
+      assert listened == """\n"""
+      
+    assert listened == """\nhttp://test.org/t.owl#c1 http://test.org/t.owl#p http://test.org/t.owl#q\n"""
+    
+    
     
     
   def test_fts_1(self):
@@ -7795,6 +8167,7 @@ with onto:
     s = world.graph.execute("SELECT MAX(storid) FROM resources").fetchone()[0]
     assert s == 300 + 4 + 200 * NB
     
+  # TODO: fix this test - it currently fails on some systems
   def test_parallel_2(self):
     q  = self.new_tmp_file()
     world = World(filename = q, exclusive = False)
@@ -7869,7 +8242,8 @@ for i in range(500):
     
     s = world.graph.execute("SELECT MAX(storid) FROM resources").fetchone()[0]
     assert s == 300 + 4 + 1000 * NB
-
+    
+  # TODO: fix this test - it currently fails on some systems
   def test_parallel_4(self):
     q  = self.new_tmp_file()
     world = World(filename = q, exclusive = False)
@@ -8335,14 +8709,14 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x ?y  { ?x a onto:A .  ?x rdfs:label ?y . }""")
     assert len(r) == 1
-    assert r == [[onto.a1, "label_a"]]
+    assert r == [[onto.a1, locstr("label_a", "en")]]
     assert q.column_names == ["?x", "?y"]
     
   def test_2(self):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["label_a"]]
+    assert r == [[locstr("label_a", "en")]]
   
   def test_3(self):
     world, onto = self.prepare1()
@@ -8366,7 +8740,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["label_a"]]
+    assert r == [[locstr("label_a", "en")]]
     assert r[0][0].lang == "en"
     
   def test_7(self):
@@ -8460,7 +8834,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x  { ?x ^rdfs:label onto:a1 . }""")
     assert len(r) == 1
-    assert r == [["label_a"]]
+    assert r == [[locstr("label_a", "en")]]
     assert r[0][0].lang == "en"
     
   def test_20(self):
@@ -8550,7 +8924,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  (UCASE(?x) AS ?l)  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["LABEL_A"]]
+    assert r == [[locstr("LABEL_A", "en")]]
     onto.a1.label = ["XxX"]
     q, r = self.sparql(world, """SELECT  (LCASE(?x) AS ?l)  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
@@ -8591,29 +8965,29 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     
     q, r = self.sparql(world, """SELECT  (STRBEFORE(?x, "_") AS ?l)  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["label"]]
-    q, r = self.sparql(world, """SELECT  (STRBEFORE(?x, "zzz") AS ?l)  { onto:a1 rdfs:label ?x . }""")
+    assert r == [[locstr("label", "en")]]
+    q, r = self.sparql(world, """SELECT  (STRBEFORE(?x, "zzz") AS ?l)  { onto:a1 rdfs:label ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [[""]]
+    assert r == [[locstr("", "en")]]
     
     q, r = self.sparql(world, """SELECT  (STRAFTER(?x, "b") AS ?l)  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["el_a"]]
-    q, r = self.sparql(world, """SELECT  (STRAFTER(?x, "zzz") AS ?l)  { onto:a1 rdfs:label ?x . }""")
+    assert r == [[locstr("el_a", "en")]]
+    q, r = self.sparql(world, """SELECT  (STRAFTER(?x, "zzz") AS ?l)  { onto:a1 rdfs:label ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [[""]]
+    assert r == [[locstr("", "en")]]
 
     q, r = self.sparql(world, """SELECT  (SUBSTR(?x, 2, 4) AS ?l)  { onto:a1 rdfs:label ?x . }""")
     assert len(r) == 1
-    assert r == [["abel"]]
+    assert r == [[locstr("abel", "en")]]
     
     q, r = self.sparql(world, """SELECT  (SIMPLEREPLACE(?x, "_", "-") AS ?l)  { onto:a1 rdfs:label ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [["label-a"]]
+    assert r == [[locstr("label-a", "en")]]
     
-    q, r = self.sparql(world, """SELECT  (CONCAT("before", ?x, "after") AS ?l)  { onto:a1 rdfs:label ?x . }""")
+    q, r = self.sparql(world, """SELECT  (CONCAT("before", ?x, "after") AS ?l)  { onto:a1 rdfs:label ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [["beforelabel_aafter"]]
+    assert r == [[locstr("beforelabel_aafter", "en")]]
     
   def test_33(self):
     world, onto = self.prepare1()
@@ -8627,7 +9001,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     onto.a1.annot = [locstr("lesson", "en"), locstr("leçon", "fr"), "xxx", 1.2, onto.b1]
     q, r = self.sparql(world, """SELECT  ?x (LANG(?x) AS ?l)  { onto:a1 onto:annot ?x . }""", compare_with_rdflib = False)
     assert len(r) == 5
-    assert { tuple(x) for x in r } == { ("lesson", "en"), ("leçon", "fr"), ("xxx", ""), (1.2, ""), (onto.b1, "") }
+    assert { tuple(x) for x in r } == { (locstr("lesson", "en"), "en"), (locstr("leçon", "fr"), "fr"), ("xxx", ""), (1.2, ""), (onto.b1, "") }
     
   def test_35(self):
     world, onto = self.prepare1()
@@ -8656,7 +9030,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     onto.a1.annot = [8.0, "eee", 4, locstr("xxx", "fr")]
     q, r = self.sparql(world, """SELECT  ?x (DATATYPE(?x) AS ?l1) { onto:a1 onto:annot ?x . }""")
     assert len(r) == 4
-    assert { tuple(x) for x in r } == { ("xxx", locstr), (8.0, float), (4, int), ("eee", str) }
+    assert { tuple(x) for x in r } == { (locstr("xxx", "fr"), locstr), (8.0, float), (4, int), ("eee", str) }
     
   def test_39(self):
     world, onto = self.prepare1()
@@ -8690,12 +9064,12 @@ class TestSPARQL(BaseTest, unittest.TestCase):
   def test_42(self):
     world, onto = self.prepare1()
     onto.a1.annot = [locstr("abc", "en"), locstr("def", "fr"), "ghi"]
-    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(?x, "*") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
+    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(LANG(?x), "*") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
     assert len(r) == 3
-    assert { tuple(x) for x in r } == { ("abc", True), ("def", True), ("ghi", False) }
-    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(?x, "FR") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
+    assert { tuple(x) for x in r } == { (locstr('abc', 'en'), True), (locstr('def', 'fr'), True), ("ghi", False) }
+    q, r = self.sparql(world, """SELECT  ?x (LANGMATCHES(LANG(?x), "FR") AS ?l1) { onto:a1 onto:annot ?x }""", compare_with_rdflib = False)
     assert len(r) == 3
-    assert { tuple(x) for x in r } == { ("abc", False), ("def", True), ("ghi", False) }
+    assert { tuple(x) for x in r } == { (locstr('abc', 'en'), False), (locstr('def', 'fr'), True), ("ghi", False) }
     
   def test_43(self):
     world, onto = self.prepare1()
@@ -8749,7 +9123,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     q, r = self.sparql(world, """SELECT  (STRLANG(?x, "fr") AS ?l1) { onto:a1 onto:annot ?x . }""", compare_with_rdflib = False)
     assert len(r) == 2
     r = sorted([x[0] for x in r])
-    assert r == ["abc", "def"]  
+    assert r == [locstr("abc", "fr"), locstr("def", "fr")]  
     assert r[0].lang == "fr"
     assert r[1].lang == "fr"
 
@@ -8777,7 +9151,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?p ?x  { onto:a1 ?p ?x . }""")
     assert len(r) == 7
-    assert { tuple(x) for x in r } == { (rdf_type, NamedIndividual), (rdf_type, onto.A), (onto.rel, onto.b2), (onto.subrel, onto.b3), (label, "label_a"), (onto.price, 10.0), (onto.price_vat_free, 8.0) }
+    assert { tuple(x) for x in r } == { (rdf_type, NamedIndividual), (rdf_type, onto.A), (onto.rel, onto.b2), (onto.subrel, onto.b3), (label, locstr("label_a", "en")), (onto.price, 10.0), (onto.price_vat_free, 8.0) }
   
   def test_52(self):
     world, onto = self.prepare1()
@@ -8805,15 +9179,15 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  *  { ?x a onto:A . ?x rdfs:label ?l . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert { tuple(x) for x in r } == { (onto.a1, "label_a") }
+    assert { tuple(x) for x in r } == { (onto.a1, locstr("label_a", "en")) }
     assert q.column_names == ["?x", "?l"]
     q, r = self.sparql(world, """SELECT  *  { ?x rdfs:label ?l . ?x a onto:A . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert { tuple(x) for x in r } == { (onto.a1, "label_a") }
+    assert { tuple(x) for x in r } == { (onto.a1, locstr("label_a", "en")) }
     assert q.column_names == ["?x", "?l"]
     q, r = self.sparql(world, """SELECT  *  { ?l ^rdfs:label ?x . ?x a onto:A . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert { tuple(x) for x in r } == { ("label_a", onto.a1) }
+    assert { tuple(x) for x in r } == { (locstr("label_a", "en"), onto.a1) }
     assert q.column_names == ["?l", "?x"]
 
   def test_56(self):
@@ -8856,7 +9230,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     assert not "WITH" in q.sql
     assert " IN " in q.sql
     assert len(r) == 2
-    assert { tuple(x) for x in r } == { (onto.a1, "label_a"), (onto.a1, "comm") }
+    assert { tuple(x) for x in r } == { (onto.a1, locstr("label_a", "en")), (onto.a1, "comm") }
     
   def test_58(self):
     world, onto = self.prepare1()
@@ -8864,7 +9238,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     assert not "WITH" in q.sql
     assert " IN " in q.sql
     assert len(r) == 2
-    assert { tuple(x) for x in r } == { ("label_a",), ("label_b",) }
+    assert { tuple(x) for x in r } == { (locstr("label_a", "en"),), (locstr("label_b", "en"),) }
     
   def test_59(self):
     world, onto = self.prepare1()
@@ -8944,7 +9318,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     r = world.sparql("""SELECT  ?x ?y  { ?x a onto:A .  ?x rdfs:label ?y . }""")
     r = list(r)
     assert len(r) == 1
-    assert r == [[onto.a1, "label_a"]]
+    assert r == [[onto.a1, locstr("label_a", "en")]]
     q1 = world.prepare_sparql("""SELECT  ?x ?y  { ?x a onto:A .  ?x rdfs:label ?y . }""")
     q2 = world.prepare_sparql("""SELECT  ?x ?y  { ?x a onto:A .  ?x rdfs:label ?y . }""")
     assert q1 is q2
@@ -9005,10 +9379,10 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     assert q1.nb_parameter == 1
     assert len(q1.parameter_datatypes) == 0
     assert len(r) == 1
-    assert { x[0] for x in r } == { "label_a" }
+    assert { x[0] for x in r } == { locstr("label_a", "en") }
     q2, r = self.sparql(world, """SELECT  ?l { ?? rdfs:label ?l }""", [onto.b1], compare_with_rdflib = False)
     assert len(r) == 1
-    assert { x[0] for x in r } == { "label_b" }
+    assert { x[0] for x in r } == { locstr("label_b", "en") }
     assert q1 is q2
     
   def test_77(self):
@@ -9016,13 +9390,13 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     q1, r = self.sparql(world, """SELECT  (CONCAT(??, ?l) AS ?l2) { onto:a1 rdfs:label ?l }""", [locstr("test_", "fr")], compare_with_rdflib = False)
     assert q1.nb_parameter == 1
     assert len(r) == 1
-    assert { x[0] for x in r } == { "test_label_a" }
+    assert { x[0] for x in r } == { locstr("test_label_a", "fr") }
     assert isinstance(r[0][0], locstr)
     assert r[0][0].lang == "fr"
     q2, r = self.sparql(world, """SELECT  (CONCAT(??, ?l) AS ?l2) { onto:a1 rdfs:label ?l }""", [locstr("test_", "en")], compare_with_rdflib = False)
     assert q2.nb_parameter == 1
     assert len(r) == 1
-    assert { x[0] for x in r } == { "test_label_a" }
+    assert { x[0] for x in r } == { locstr("test_label_a", "en") }
     assert isinstance(r[0][0], locstr)
     assert r[0][0].lang == "en"
     assert q1 is q2
@@ -9046,21 +9420,21 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     assert q.nb_parameter == 2
     assert len(q.parameter_datatypes) == 0
     assert len(r) == 1
-    assert { x[0] for x in r } == { "label_a" }
+    assert { x[0] for x in r } == { locstr("label_a", "en") }
     
   def test_80(self):
     world, onto = self.prepare1()
     onto.b2.label = []
     q, r = self.sparql(world, """SELECT  ?x ?l  { ?x a onto:B . OPTIONAL { ?x rdfs:label ?l . } }""")
     assert len(r) == 3
-    assert { tuple(x) for x in r } == { (onto.b1, "label_b"), (onto.b2, None), (onto.b3, "label_b") }
+    assert { tuple(x) for x in r } == { (onto.b1, locstr("label_b", "en")), (onto.b2, None), (onto.b3, locstr("label_b", "fr")) }
     
   def test_81(self):
     world, onto = self.prepare1()
     onto.a1.comment = ["test"]
     q, r = self.sparql(world, """SELECT  ?l  { onto:a1 rdfs:label|rdfs:comment ?l . }""")
     assert len(r) == 2
-    assert { x[0] for x in r } == { "label_a", "test" }
+    assert { x[0] for x in r } == { locstr("label_a", "en"), "test" }
     assert " IN " in q.sql
 
   def test_82(self):
@@ -9115,11 +9489,11 @@ class TestSPARQL(BaseTest, unittest.TestCase):
   def test_85(self):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY ?l""")
-    assert r == [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, 'label_a'], [onto.b1, 'label_b'], [onto.b2, 'label_b'], [onto.b3, 'label_b'], [onto.price, 'price'], [onto.rel, 'rel']]
+    assert r == [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, locstr('label_a', "en")], [onto.b1, locstr('label_b', "en")], [onto.b2, locstr('label_b', "en")], [onto.b3, locstr('label_b', "fr")], [onto.price, 'price'], [onto.rel, 'rel']]
     q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY DESC(?l)""")
-    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b3, 'label_b'], [onto.b2, 'label_b'], [onto.b1, 'label_b'], [onto.a1, 'label_a'], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
+    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b3, locstr('label_b', "fr")], [onto.b2, locstr('label_b', "en")], [onto.b1, locstr('label_b', "en")], [onto.a1, locstr('label_a', "en")], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
     q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY DESC(?l) ?x""")
-    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b1, 'label_b'], [onto.b2, 'label_b'], [onto.b3, 'label_b'], [onto.a1, 'label_a'], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
+    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b1, locstr('label_b', "en")], [onto.b2, locstr('label_b', "en")], [onto.b3, locstr('label_b', "fr")], [onto.a1, locstr('label_a', "en")], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
     
   def test_86(self):
     world, onto = self.prepare1()
@@ -9237,7 +9611,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     onto.b3.label.append("b3")
     q, r = self.sparql(world, """SELECT  ?b ?l  { ?b a onto:B . OPTIONAL { ?b rdfs:label ?l . } FILTER(BOUND(?l)) }""")
     assert len(r) == 3
-    assert { tuple(x) for x in r } == { (onto.b1, "label_b"), (onto.b3, "label_b"), (onto.b3, "b3") }
+    assert { tuple(x) for x in r } == { (onto.b1, locstr("label_b", "en")), (onto.b3, locstr("label_b", "fr")), (onto.b3, "b3") }
     
   def test_98(self):
     world, onto = self.prepare1()
@@ -9323,14 +9697,14 @@ class TestSPARQL(BaseTest, unittest.TestCase):
   def test_106(self):
     world, onto = self.prepare1()
     onto.a1.annot = [locstr("Oignon", "fr")]
-    q, r = self.sparql(world, """SELECT  (CONCAT(?x, "s") AS ?r)  { onto:a1 onto:annot ?x . }""")
+    q, r = self.sparql(world, """SELECT  (CONCAT(?x, "s") AS ?r)  { onto:a1 onto:annot ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [["Oignons"]]
+    assert r == [[locstr("Oignons", "fr")]]
     assert isinstance(r[0][0], locstr)
     assert r[0][0].lang == "fr"
-    q, r = self.sparql(world, """SELECT  (CONCAT("Z", ?x) AS ?r)  { onto:a1 onto:annot ?x . }""")
+    q, r = self.sparql(world, """SELECT  (CONCAT("Z", ?x) AS ?r)  { onto:a1 onto:annot ?x . }""", compare_with_rdflib = False)
     assert len(r) == 1
-    assert r == [["ZOignon"]]
+    assert r == [[locstr("ZOignon", "fr")]]
     assert isinstance(r[0][0], locstr)
     assert r[0][0].lang == "fr"
     
@@ -9376,15 +9750,15 @@ class TestSPARQL(BaseTest, unittest.TestCase):
       q, r = self.sparql(world, """INSERT { ?x rdfs:label "un A"@fr } WHERE  { ?x a onto:A . }""", compare_with_rdflib = False)
     assert len(onto.a1.label) == 2
     l = sorted(onto.a1.label)
-    assert l[0] == "label_a"
+    assert l[0] == locstr("label_a", "en")
     assert l[0].lang == "en"
-    assert l[1] == "un A"
+    assert l[1] == locstr("un A", "fr")
     assert l[1].lang == "fr"
     del onto.a1.label
     assert len(onto.a1.label) == 2
-    assert l[0] == "label_a"
+    assert l[0] == locstr("label_a", "en")
     assert l[0].lang == "en"
-    assert l[1] == "un A"
+    assert l[1] == locstr("un A", "fr")
     assert l[1].lang == "fr"
 
   def test_112(self):
@@ -9394,12 +9768,12 @@ class TestSPARQL(BaseTest, unittest.TestCase):
       q, r = self.sparql(world, """INSERT { ?x rdfs:label "un A" } WHERE  { ?x a onto:A . }""", compare_with_rdflib = False)
     assert len(onto.a1.label) == 2
     l = sorted(onto.a1.label)
-    assert l[0] == "label_a"
+    assert l[0] == locstr("label_a", "en")
     assert l[0].lang == "en"
     assert l[1] == "un A"
     del onto.a1.label
     assert len(onto.a1.label) == 2
-    assert l[0] == "label_a"
+    assert l[0] == locstr("label_a", "en")
     assert l[0].lang == "en"
     assert l[1] == "un A"
 
@@ -9415,7 +9789,7 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT  ?x ?y  { ?x a onto:A.  ?x rdfs:label ?y. }""")
     assert len(r) == 1
-    assert r == [[onto.a1, "label_a"]]
+    assert r == [[onto.a1, locstr("label_a", "en")]]
     assert q.column_names == ["?x", "?y"]
     
   def test_115(self):
@@ -9462,14 +9836,14 @@ http://test.org/onto.owl#A\tClasse A
     endpoint = EndPoint(world)
     app.route("/sparql", methods = ["GET"])(endpoint)
     
-    p = multiprocessing.Process(target = werkzeug.serving.run_simple, args = ("localhost", 5000, app))
+    p = multiprocessing.Process(target = werkzeug.serving.run_simple, args = ("localhost", 5032, app))
     p.start()
     
     time.sleep(0.3)
-    r = urllib.request.urlopen("http://localhost:5000/sparql?query=SELECT%20%20?x%20?y%20%20{%20?x%20rdfs:label%20?y.%20}%20ORDER%20BY%20DESC(?y)").read()
+    r = urllib.request.urlopen("http://localhost:5032/sparql?query=SELECT%20%20?x%20?y%20%20{%20?x%20rdfs:label%20?y.%20}%20ORDER%20BY%20DESC(?y)").read()
     assert r == b'x,y\r\nhttp://test.org/onto.owl#rel,rel\r\nhttp://test.org/onto.owl#price,price\r\nhttp://test.org/onto.owl#b3,label_b\r\nhttp://test.org/onto.owl#b2,label_b\r\nhttp://test.org/onto.owl#b1,label_b\r\nhttp://test.org/onto.owl#a1,label_a\r\nhttp://test.org/onto.owl#A1,Classe A1\r\nhttp://test.org/onto.owl#A,Classe A\r\n'
     
-    r = urllib.request.urlopen(urllib.request.Request("http://localhost:5000/sparql?query=SELECT%20%20?x%20?y%20%20{%20?x%20rdfs:label%20?y.%20}%20ORDER%20BY%20DESC(?y)", headers = { "Accept" : "application/json" })).read()
+    r = urllib.request.urlopen(urllib.request.Request("http://localhost:5032/sparql?query=SELECT%20%20?x%20?y%20%20{%20?x%20rdfs:label%20?y.%20}%20ORDER%20BY%20DESC(?y)", headers = { "Accept" : "application/json" })).read()
     assert r == b"{'head': {'vars': ['x', 'y']}, 'results': {'bindings': [{'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#rel'}, 'y': {'type': 'literal', 'value': 'rel', 'datatype': 'http://www.w3.org/2001/XMLSchema#string'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#price'}, 'y': {'type': 'literal', 'value': 'price', 'datatype': 'http://www.w3.org/2001/XMLSchema#string'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#b3'}, 'y': {'type': 'literal', 'value': 'label_b', 'xml:lang': 'fr'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#b2'}, 'y': {'type': 'literal', 'value': 'label_b', 'xml:lang': 'en'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#b1'}, 'y': {'type': 'literal', 'value': 'label_b', 'xml:lang': 'en'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#a1'}, 'y': {'type': 'literal', 'value': 'label_a', 'xml:lang': 'en'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#A1'}, 'y': {'type': 'literal', 'value': 'Classe A1', 'datatype': 'http://www.w3.org/2001/XMLSchema#string'}}, {'x': {'type': 'uri', 'value': 'http://test.org/onto.owl#A'}, 'y': {'type': 'literal', 'value': 'Classe A', 'datatype': 'http://www.w3.org/2001/XMLSchema#string'}}]}}"
     
     p.terminate()
@@ -9477,7 +9851,7 @@ http://test.org/onto.owl#A\tClasse A
   def test_117(self):
     world, onto = self.prepare1()
     q, r = self.sparql(world, """SELECT DISTINCT ?x ?l  { { ?x rdfs:label ?l. } UNION { ?x rdfs:label ?l. } } ORDER BY ?l""")
-    assert set(tuple(x) for x in r) == set(tuple(x) for x in [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, 'label_a'], [onto.b1, 'label_b'], [onto.b2, 'label_b'], [onto.b3, 'label_b'], [onto.price, 'price'], [onto.rel, 'rel']])
+    assert set(tuple(x) for x in r) == set(tuple(x) for x in [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, locstr('label_a', "en")], [onto.b1, locstr('label_b', "en")], [onto.b2, locstr('label_b', "en")], [onto.b3, locstr('label_b', "fr")], [onto.price, 'price'], [onto.rel, 'rel']])
     
   def test_118(self):
     world, onto = self.prepare1()
@@ -9736,7 +10110,7 @@ WHERE {
     q1, r = self.sparql(world, """SELECT  (CONCAT(??, ?l) AS ?l2) { ?? rdfs:label ?l }""", [locstr("test_", "fr"), onto.a1], compare_with_rdflib = False)
     assert q1.nb_parameter == 2
     assert len(r) == 1
-    assert { x[0] for x in r } == { "test_label_a" }
+    assert { x[0] for x in r } == { locstr("test_label_a", "fr") }
     assert isinstance(r[0][0], locstr)
     assert r[0][0].lang == "fr"
     
@@ -9970,7 +10344,7 @@ OPTIONAL { ?a onto:rel ?b . } OPTIONAL { ?b rdfs:label ?l . } .
 """, compare_with_rdflib = False)
     
     assert "JOIN" in q.sql
-    assert r == [[onto.a1, onto.b2, "label_b"]]
+    assert r == [[onto.a1, onto.b2, locstr("label_b", "en")]]
 
   def test_150(self):
     world, onto = self.prepare1()
@@ -10142,6 +10516,8 @@ SELECT ?x WHERE { ?x a onto:Cé }
     q, r = self.sparql(world, """SELECT ?i { onto:c1 onto:p ?i }""", compare_with_rdflib = True)
     assert set(i for i, in r) == { 1, 2, 3 }
     
+    q = world.prepare_sparql("""SELECT ?i { GRAPH onto: { onto:c1 onto:p ?i } }""")
+    
     q, r = self.sparql(world, """SELECT ?i { GRAPH onto: { onto:c1 onto:p ?i } }""", compare_with_rdflib = False)
     assert set(i for i, in r) == { 1 }
     
@@ -10242,6 +10618,121 @@ onto:patient1 onto:match ?x .
       """, [patient1])
       
     assert r == [1]
+    
+  def test_161(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      
+    q, r = self.sparql(world, """INSERT { GRAPH <http://test.org/onto.owl> { ?c rdfs:comment "ok" } } WHERE { GRAPH ?g { ?c a owl:Class } }""", compare_with_rdflib = True)
+    assert C.comment == ["ok"]
+    
+  def test_162(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      
+    q, r = self.sparql(world, """INSERT { GRAPH <http://test.org/onto.owl> { ?c rdfs:comment "ok" . ?c rdfs:label "lab", "lab2" ; rdfs:seeAlso 2 . } } WHERE { GRAPH ?g { ?c a owl:Class } }""", compare_with_rdflib = True)
+    assert C.comment == ["ok"]
+    assert C.label == ["lab", "lab2"]
+    assert C.seeAlso == [2]
+        
+  def test_163(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      c1 = C()
+      
+    assert c1.comment == []
+    q, r = self.sparql(world, """INSERT { GRAPH <http://test.org/onto.owl> { onto:c1 rdfs:comment "ok" . } } WHERE {}""", compare_with_rdflib = True)
+    assert c1.comment == ["ok"]
+      
+    assert C.comment == []
+    q, r = self.sparql(world, """INSERT { GRAPH <http://test.org/onto.owl> { onto:C rdfs:comment "ok" . } } WHERE {}""", compare_with_rdflib = True)
+    assert C.comment == ["ok"]
+    
+  def test_164(self):
+    world = self.new_world()
+    onto1 = world.get_ontology("http://test.org/onto1.owl")
+    onto2 = world.get_ontology("http://test.org/onto2.owl")
+    with onto1:
+      class C(Thing): pass
+    with onto2:
+      class D(Thing): pass
+      
+    q, r = self.sparql(world, """INSERT { GRAPH ?g { ?c rdfs:comment "ok" } } WHERE { GRAPH ?g { ?c a owl:Class } }""", compare_with_rdflib = True)
+    assert C.comment == ["ok"]
+    assert D.comment == ["ok"]
+    
+    assert onto1.graph._get_data_triples_sp_od(C.storid, comment.storid) == [("ok", 60)]
+    assert onto2.graph._get_data_triples_sp_od(C.storid, comment.storid) == []
+    assert onto1.graph._get_data_triples_sp_od(D.storid, comment.storid) == []
+    assert onto2.graph._get_data_triples_sp_od(D.storid, comment.storid) == [("ok", 60)]
+    
+    # q, r = self.sparql(world, """INSERT { GRAPH ??1 { ?c rdfs:label "lab" } } WHERE { ?c a owl:Class }""", [onto1], compare_with_rdflib = True)
+    # assert C.label == ["lab"]
+    # assert D.label == ["lab"]
+    
+    # assert onto1.graph._get_data_triples_sp_od(C.storid, label.storid) == [("lab", 60)]
+    # assert onto2.graph._get_data_triples_sp_od(C.storid, label.storid) == []
+    # assert onto1.graph._get_data_triples_sp_od(D.storid, label.storid) == [("lab", 60)]
+    # assert onto2.graph._get_data_triples_sp_od(D.storid, label.storid) == []
+    
+  def test_165(self):
+    world = self.new_world()
+    onto = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p(C >> int): pass
+      c1 = C(p = [1, 2, 3])
+      comment[c1, p, 1] = ["com"]
+      
+    q, r = self.sparql(world, """DELETE { ?x owl:annotatedTarget ??3 }  INSERT  { GRAPH ?g { ?x owl:annotatedTarget ??4 } }  WHERE  { ?x owl:annotatedSource ??1 ; owl:annotatedProperty ??2 . GRAPH ?g { ?x owl:annotatedTarget ??3 } }""", [c1, p, 1, 2], compare_with_rdflib = False)
+    assert comment[c1, p, 1] == []
+    assert comment[c1, p, 2] == ["com"]
+    assert comment[c1, p, 3] == []
+    
+    q, r = self.sparql(world, """DELETE { ?x owl:annotatedTarget ??3 }  INSERT  { GRAPH ?g { ?x owl:annotatedTarget ??4 } }  WHERE  { GRAPH ?g { ?x owl:annotatedSource ??1 ; owl:annotatedProperty ??2 ; owl:annotatedTarget ??3 } }""", [c1, p, 2, 3], compare_with_rdflib = False)
+    assert comment[c1, p, 1] == []
+    assert comment[c1, p, 2] == []
+    assert comment[c1, p, 3] == ["com"]
+    
+  def test_166(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class E(Thing):
+        label = [locstr("E", "en")]
+    
+      class E_US(Thing):
+        label = [locstr("E_US", "en-US")]
+    
+      class F(Thing):
+        label = [locstr("F", "fr")]
+    
+      class F2(Thing):
+        label = [locstr("F2", "fr")]
+    
+      class X(Thing):
+        label = ["X"]
+        
+        
+    q, r = self.sparql(world, """SELECT ?x1 { ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),"en")) }""")
+    assert set(i[0] for i in r) == { E, E_US }
+
+    q, r = self.sparql(world, """SELECT ?x1 { ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),"en-US")) }""")
+    assert set(i[0] for i in r) == { E_US }
+
+    q, r = self.sparql(world, """SELECT ?x1 { onto:F rdfs:label ?ref. ?x1 rdfs:label ?y1. FILTER(LANGMATCHES(LANG(?y1),LANG(?ref))) }""")
+    assert set(i[0] for i in r) == { F, F2 }
+    
+    q, r = self.sparql(world, """SELECT (LANG(?lab) AS ?lang) { onto:X rdfs:label ?lab. }""")
+    assert r == [[""]]
+    
+    #assert set(i[0] for i in r) == { E_US }
     
 # Add test for Pellet
 

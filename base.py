@@ -25,8 +25,6 @@ import datetime
 
 from owlready2.util import *
 
-#_HERE = os.path.dirname(__file__)
-
 class OwlReadyWarning                     (UserWarning): pass
 class OwlReadyUndefinedIRIWarning         (OwlReadyWarning): pass
 class OwlReadyOntologyIRIWarning          (OwlReadyWarning): pass
@@ -44,7 +42,7 @@ class OwlReadyJavaError(OwlReadyError): pass
 
 
 def to_literal(o):
-  if isinstance(o, locstr) and o.lang: return o, "@%s" % o.lang
+  if isinstance(o, locstr) and o.lang: return str(o), "@%s" % o.lang
   datatype, unparser = _universal_datatype_2_abbrev_unparser.get(o.__class__) or (None, None)
   if datatype is None: raise ValueError("Cannot store literal '%s' of type '%s'!" % (o, type(o)))
   return unparser(o), datatype
@@ -123,7 +121,7 @@ DONT_COPY_BN = Environment()
 LOADING = Environment()
 LOADING.__enter__() # Avoid creating triple when creating base classes like Thing
 
-    
+
 _universal_abbrev_2_datatype = {}
 _universal_datatype_2_abbrev = {}
 
@@ -139,12 +137,12 @@ def _universal_abbrev_datatype(datatype, parser, unparser, *iris):
     _universal_abbrev_2_datatype_parser[abb] = (datatype, parser or datatype)
 
 
-def bool_parser(s):
+def _bool_parser(s):
   return (s == "true") or (s == 1)
-def bool_unparser(b):
+def _bool_unparser(b):
   if b: return "true"
   return "false"
-def number_unparser(x):
+def _number_unparser(x):
   return x
 
 def _parse_date(s):
@@ -161,12 +159,12 @@ def _parse_datetime(s):
     except: pass
   raise ValueError("Cannot parse ISO datetime '%s'!" % s)
 
-_universal_abbrev_datatype(int, None, number_unparser, "http://www.w3.org/2001/XMLSchema#integer", "http://www.w3.org/2001/XMLSchema#byte", "http://www.w3.org/2001/XMLSchema#short", "http://www.w3.org/2001/XMLSchema#int", "http://www.w3.org/2001/XMLSchema#long", "http://www.w3.org/2001/XMLSchema#unsignedByte", "http://www.w3.org/2001/XMLSchema#unsignedShort", "http://www.w3.org/2001/XMLSchema#unsignedInt", "http://www.w3.org/2001/XMLSchema#unsignedLong", "http://www.w3.org/2001/XMLSchema#negativeInteger", "http://www.w3.org/2001/XMLSchema#nonNegativeInteger", "http://www.w3.org/2001/XMLSchema#positiveInteger")
-_universal_abbrev_datatype(bool, bool_parser, bool_unparser, "http://www.w3.org/2001/XMLSchema#boolean")
-_universal_abbrev_datatype(float, None, number_unparser, "http://www.w3.org/2001/XMLSchema#decimal", "http://www.w3.org/2001/XMLSchema#double", "http://www.w3.org/2001/XMLSchema#float", "http://www.w3.org/2002/07/owl#real")
+_universal_abbrev_datatype(int, None, _number_unparser, "http://www.w3.org/2001/XMLSchema#integer", "http://www.w3.org/2001/XMLSchema#byte", "http://www.w3.org/2001/XMLSchema#short", "http://www.w3.org/2001/XMLSchema#int", "http://www.w3.org/2001/XMLSchema#long", "http://www.w3.org/2001/XMLSchema#unsignedByte", "http://www.w3.org/2001/XMLSchema#unsignedShort", "http://www.w3.org/2001/XMLSchema#unsignedInt", "http://www.w3.org/2001/XMLSchema#unsignedLong", "http://www.w3.org/2001/XMLSchema#negativeInteger", "http://www.w3.org/2001/XMLSchema#nonNegativeInteger", "http://www.w3.org/2001/XMLSchema#positiveInteger")
+_universal_abbrev_datatype(bool, _bool_parser, _bool_unparser, "http://www.w3.org/2001/XMLSchema#boolean")
+_universal_abbrev_datatype(float, None, _number_unparser, "http://www.w3.org/2001/XMLSchema#decimal", "http://www.w3.org/2001/XMLSchema#double", "http://www.w3.org/2001/XMLSchema#float", "http://www.w3.org/2002/07/owl#real")
 _universal_abbrev_datatype(str, None, None, "http://www.w3.org/2001/XMLSchema#string", "http://www.w3.org/2001/XMLSchema#QName", "http://www.w3.org/2001/XMLSchema#NOTATION")
 _universal_abbrev_datatype(normstr, None, None, "http://www.w3.org/2001/XMLSchema#normalizedString", "http://www.w3.org/2001/XMLSchema#anyURI", "http://www.w3.org/2001/XMLSchema#Name", "http://www.w3.org/2001/XMLSchema#NCName", "http://www.w3.org/2001/XMLSchema#language", "http://www.w3.org/2001/XMLSchema#token", "http://www.w3.org/2001/XMLSchema#NMTOKEN", "http://www.w3.org/2001/XMLSchema#ID", "http://www.w3.org/2001/XMLSchema#IDREF", "http://www.w3.org/2001/XMLSchema#ENTITY")
-_universal_abbrev_datatype(locstr, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
+_universal_abbrev_datatype(plainliteral, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
 _universal_abbrev_datatype(datetime.datetime,
                            _parse_datetime,
                            lambda dt: datetime.datetime.isoformat(dt, timespec='milliseconds'),
@@ -306,8 +304,8 @@ owl_disjointunion            = _universal_abbrev("http://www.w3.org/2002/07/owl#
 #owlready_context_is_a        = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#context_is_a")
 owlready_concrete            = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#concrete")
 
-rdf_langstring               = _universal_abbrev("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")
-_universal_abbrev_2_datatype[rdf_langstring] = locstr
+_universal_abbrev_datatype(locstr, None, None, "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")
+rdf_langstring = _universal_datatype_2_abbrev[locstr]
 
 #xsd_duration                 = _universal_abbrev("http://www.w3.org/2001/XMLSchema#duration")
 _universal_abbrev_datatype(datetime.timedelta,

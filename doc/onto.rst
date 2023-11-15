@@ -84,6 +84,14 @@ It will be loaded only once.
    Consequently, preferred formats are RDF/XML and NTriples.
 
    
+In complement to the onto_path global variable, the PREDEFINED_ONTOLOGIES global dict can be used to map ontology IRI
+to local files or arbitrary URL. You can add your own mapping to PREDEFINED_ONTOLOGIES. For instance, if the ontology
+"http://rds.posccaesar.org/ontology/lis14/ont/core" should actually be loaded from the URL "http://rds.posccaesar.org/ontology/lis14/ont/core/1.0",
+you can define it as follows:
+
+::
+
+   >>> PREDEFINED_ONTOLOGIES["http://rds.posccaesar.org/ontology/lis14/ont/core"] = "http://rds.posccaesar.org/ontology/lis14/ont/core/1.0"
    
 
 

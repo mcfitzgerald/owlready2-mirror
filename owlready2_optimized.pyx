@@ -132,7 +132,7 @@ cdef void add_to_bn2(object bns, set known_nodes, str bn, str type, str rel, obj
       if type == "DAT":
         bns[bn].add((type, rel, value, d))
       else:
-        if value.startswith("_") and (not value in known_nodes): value = frozenset(bns[value])
+        if value.startswith("_") and (not value in known_nodes): value = frozenset(bns.get(value) or set())
         bns[bn].add((type, rel, value))
 
     

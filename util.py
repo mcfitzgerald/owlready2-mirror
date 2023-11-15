@@ -24,12 +24,17 @@
 
 class FTS(str):
   __slots__ = ["lang"]
-  def __new__(Class, s, lang = ""): return str.__new__(Class, s.replace("'", '''"'"''').replace("-", '''"-"''').replace("+", '''"+"'''))
+  def __new__(Class, s, lang = ""): return str.__new__(Class, " ".join(('"%s"*' % i[:-1]) if i.endswith("*") else ('"%s"' % i) for i in s.split()))
   
   def __init__(self, s, lang = ""):
     str.__init__(self)
     self.lang = lang
-
+    
+class FTSSqlite3Phrase(FTS):
+  __slots__ = ["lang"]
+  def __new__(Class, s, lang = ""): return str.__new__(FTSSqlite3Phrase, s)
+  
+  
 class NumS(object):
   _OPERATORS = { "<", ">", ">=", "<=", "=", "!=" }
   def __init__(self, *operators_and_values):
@@ -41,19 +46,26 @@ class NumS(object):
     
 class normstr(str):
   __slots__ = []
+  
+class plainliteral(str):
+  __slots__ = []
 
 class locstr(str):
   __slots__ = ["lang"]
   def __new__(Class, s, lang = ""): return str.__new__(Class, s)
   
+  def __repr__(self): return """locstr(%s, %s)""" % (repr(str(self)), repr(self.lang))
   def __init__(self, s, lang = ""):
     str.__init__(self)
     self.lang = lang
     
   def __eq__(self, other):
-    return str.__eq__(self, other) and ((not isinstance(other, locstr)) or (self.lang == other.lang))
+    return isinstance(other, locstr) and str.__eq__(self, other) and (self.lang == other.lang)
   
-  def __hash__(self): return str.__hash__(self)
+  def __ne__(self, other):
+    return (not isinstance(other, locstr)) or str.__ne__(self, other) or (self.lang != other.lang)
+  
+  def __hash__(self): return hash((str(self), self.lang))
 
 
 class FirstList(list):
@@ -115,7 +127,6 @@ class LanguageSublist(CallbackList):
     if isinstance(l, str): l = [locstr(l, self._lang)]
     else:                  l = [locstr(x, self._lang) for x in l]
     CallbackList.reinit(self, l)
-
 
 
 def _is_valid_language_code(s):

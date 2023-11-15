@@ -157,7 +157,7 @@ class BaseSubGraph(BaseGraph):
           owlready2_optimized.parse_ntriples(f, queue, default_base, 800000)
           
         else:
-          splitter = re.compile("\s")
+          splitter = re.compile("\\s")
           objs  = []
           datas = []
           line  = f.readline().decode("utf8")
@@ -246,7 +246,11 @@ class BaseSubGraph(BaseGraph):
           
       try:
         parallel = os.path.getsize(f.name) >= 8000000
-        if parallel: import multiprocessing
+        if parallel:
+          import multiprocessing
+          if multiprocessing.get_start_method() != "fork":
+            parallel = False # Spawn is not supported -- I still need to figure out how to transfer the file object to the spawned process
+            
       except:
         parallel = False
         
@@ -269,8 +273,9 @@ class BaseSubGraph(BaseGraph):
     if commit: self.parent.commit()
     _save(f, format, self, **kargs)
     
-  
-  
+
+
+          
 def _guess_format(f):
   if f.seekable():
     s = f.read(1000)
@@ -378,10 +383,10 @@ def _save(f, format, graph, filter = None):
         xmln  = "%s:" % xmln0
         i = 2
         while xmln in xmlns_abbbrevs: xmln = "%s%s:" % (xmln0, i) ; i += 1
-
+        
         xmlns[left] = xmln = xmln
         xmlns_abbbrevs.add(xmln)
-
+        
       x = x[splitat + 1:]
       r = "%s%s" % (xmln, x)
       if not x[0] in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ": bad_types.add(r)
@@ -421,7 +426,6 @@ def _save(f, format, graph, filter = None):
       "owl:SymmetricProperty",
       "owl:ReflexiveProperty",
       "owl:IrreflexiveProperty",
-      "owl:NamedIndividual",
       }
     
     def parse_list(bn):

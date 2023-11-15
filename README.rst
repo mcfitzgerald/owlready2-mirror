@@ -712,7 +712,8 @@ version 2 - 0.41
 version 2 - 0.42
 ****************
 
-* Support GRAPH clauses in SPARQL queries
+* INCOMPATIBLE CHANGE: Consider literal with different language as different (e.g. locstr("Test", "en") != locstr("Test", "fr"))
+* Support GRAPH clauses in SPARQL SELECT queries
 * World now supports custom lock (e.g. World(lock = ...))
 * Bugfixes:
   - Fix World(enable_thread_parallelism = True) (was named enable_gevent)
@@ -720,7 +721,46 @@ version 2 - 0.42
   - Fix FILTER in SPARQL when the filter was just after a recursive query
   - Fix recursive query in SPARQL involving variables in their right part
   - Fix SPARQL query with annotations containing entities
+  - Fix property creation when using a Union in the '>>' syntax (e.g. class Prop((MyClass | MyOtherClass) >> str): pass)
+  - Fix UMLS extraction in PyMedTermino2
+  - Fix Class IRI with brackets (or other special characters) when writing RDF/XML file
     
+version 2 - 0.43
+****************
+
+* Bugfixes:
+  - Fix != operator on locstr
+
+version 2 - 0.44
+****************
+
+* New syntax for annotations on relation, e.g. AnnotatedRelation(s,p,o).comment = "abc" (the old syntax remains supported)
+* Optimize annotations on relations
+* Support GRAPH clauses in SPARQL INSERT queries
+* Observation framework (see owlready2.observe and doc on the observation framework)
+* Bugfixes:
+  - Fix the update of equivalent_to after destroying a class
+  - Fix the update of annotations on class when modified with SPARQL queries
+  - Fix SPARQL GRAPH clause in SELECT queries when querying the graph as a variable and all triples are not inside the GRAPH clause
+  - Fix LANGMATCHES SPARQL function
+  - Prevent multiprocessing loading of large ontologies when fork is not available (i.e. on Mac)
+  - Fix subproperties parent classes when destroying a property
+  - Fix loading of TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
+    
+version 2 - 0.45
+****************
+
+* The PREDEFINED_ONTOLOGIES global dictionary can now be used to map ontology IRI to arbitrary local pathes or URL.
+* The new FTSSqlite3Phrase() string type can be used to perform FTS search using Sqlite3 special syntax, e.g. default_world.search(label = FTSSqlite3Phrase("Electrocardiographic OR ECG"))
+* Add support for RDF plain literals, via the plainliteral Python datatype.
+* Bugfixes:
+  * Fix set_name() on property when python_name is the same as name
+  * Fix some special characters (e.g. :) and keyword (e.g. OR) in FTS search
+  * Fix literal with no datatype (should be considered as string, see https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal
+  * Fix wrong inheritance of TransitiveProperty, ReflexiveProperty and SymmetricProperty
+  * Fix 'DeprecationWarning: invalid escape sequence' in regexp
+  * Raise an error when creating a new ontology inside a with ontology:... block
+  * Use rdf:langString for locstr (was rdf:plainLiteral)
     
 Links
 -----

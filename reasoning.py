@@ -27,11 +27,11 @@ from owlready2.class_construct import *
 from owlready2.individual      import *
 
 
-_HERMIT_RESULT_REGEXP = re.compile("^([A-Za-z]+)\\( ((?:<(?:[^>]+)>\s*)+) \\)$", re.MULTILINE)
-_HERMIT_PROP_REGEXP   = re.compile("^<([^>]+)> \\(known instances:\s*(.*?)(?:\s*\\|\s*)possible instances:\s*(.*?)\s*\\)", re.MULTILINE)
+_HERMIT_RESULT_REGEXP = re.compile("^([A-Za-z]+)\\( ((?:<(?:[^>]+)>\\s*)+) \\)$", re.MULTILINE)
+_HERMIT_PROP_REGEXP   = re.compile("^<([^>]+)> \\(known instances:\\s*(.*?)(?:\\s*\\|\\s*)possible instances:\\s*(.*?)\\s*\\)", re.MULTILINE)
 
 _PELLET_PROP_REGEXP      = re.compile("^PROPINST: ([^ ]+) ([^ ]+) ([^ ]+)$", re.MULTILINE)
-_PELLET_DATA_PROP_REGEXP = re.compile("^DATAPROPVAL: ([^ ]+) ([^ ]+) literal\((.*),(.*?),(.*?)\)$", re.MULTILINE)
+_PELLET_DATA_PROP_REGEXP = re.compile("^DATAPROPVAL: ([^ ]+) ([^ ]+) literal\\((.*),(.*?),(.*?)\\)$", re.MULTILINE)
 
 
 _HERE = os.path.dirname(__file__)
@@ -317,7 +317,7 @@ def sync_reasoner_pellet(x = None, infer_property_values = False, infer_data_pro
           ind_storid = ontology._abbreviate(ind_iri)
           entity_2_type[ind_storid] = "individual"
           new_parents[ind_storid].extend(class_storids)
-        
+          
     if infer_property_values:
       inferred_obj_relations = []
       for a_iri, prop_iri, b_iri in _PELLET_PROP_REGEXP.findall(output):
@@ -329,7 +329,7 @@ def sync_reasoner_pellet(x = None, infer_property_values = False, infer_data_pro
             (not world._has_obj_triple_spo(a_storid, prop.storid, b_storid)) and
            ((not prop._inverse_property) or (not world._has_obj_triple_spo(b_storid, prop._inverse_storid, a_storid)))):
           inferred_obj_relations.append((a_storid, prop, b_storid))
-        
+          
     if infer_data_property_values:
       inferred_data_relations = []
       for a_iri, prop_iri, value, lang, datatype in _PELLET_DATA_PROP_REGEXP.findall(output):

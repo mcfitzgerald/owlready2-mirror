@@ -41,10 +41,12 @@ Usage:
 Options:
 
   --short : shortify IRI and literal (more Human readable).
+  --ignore_plain_literal : treat plain literal as string (this is a workaround for a bug in OWLAPI).
 """
 
 import sys, os, warnings
 
+ignore_plain_literal = False
 
 def shortify(triples):
   triples2 = []
@@ -105,7 +107,12 @@ def canonize(nt):
     if line.startswith("#") or not line: continue
     line = line[:-1].strip()
     s,p,o = line.split(None, 2)
-    if o.endswith("^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral>"): o = o.rsplit("^^", 1)[0]
+    if ignore_plain_literal and o.endswith("^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral>"):
+      o = o.rsplit("^^", 1)[0]
+    if (o.startswith('"') and o.endswith('"')) or (o.startswith("'") and o.endswith("'")):
+      # Missing datatype are "syntactic sugar" for string, see https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal
+      o = "%s^^<http://www.w3.org/2001/XMLSchema#string>" % o
+    #if o.endswith("^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral>"): o = o.rsplit("^^", 1)[0]
     if s.startswith("_"): s = blanks.get(s) or Blank()
     if o.startswith("_"): o = blanks.get(o) or Blank()
     if isinstance(s, Blank): s.add_triple(s,p,o)
@@ -157,6 +164,12 @@ if __name__ == "__main__":
     short = True
   else:
     short = False
+    
+  if "--ignore_plain_literal" in sys.argv:
+    sys.argv.remove("--ignore_plain_literal")
+    ignore_plain_literal = True
+  else:
+    ignore_plain_literal = False
     
   if   len(sys.argv) == 2:
     nt = open(sys.argv[1]).read()
