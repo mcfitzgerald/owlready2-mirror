@@ -762,6 +762,12 @@ version 2 - 0.45
   * Raise an error when creating a new ontology inside a with ontology:... block
   * Use rdf:langString for locstr (was rdf:plainLiteral)
     
+version 2 - 0.46
+****************
+
+* Remove warning when Cython module is not available
+
+    
 Links
 -----
 

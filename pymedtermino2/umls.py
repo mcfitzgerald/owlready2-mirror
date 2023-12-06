@@ -626,7 +626,7 @@ def import_umls(umls_zip_filename, terminologies = None, langs = None, fts_index
     terminologies = set(terminologies)
   if langs:
     langs = set(langs)
-
+    
   PYM = create_model()
   default_world.save()
   

@@ -43,7 +43,7 @@ def _gen_triple_method_obj(onto, triple_method):
       if not Class is None: # Else it is Thing
         for parent in Class.ancestors():
           for l in _INSTANCES_OF_CLASS.get(parent.storid, ()):
-            l._changed()
+            l._changed(onto)
   return f
   
 def _gen_triple_method_data(onto, triple_method):
@@ -115,6 +115,12 @@ def start_observing(onto_or_world):
         elif s < 0:
           for i in p2: _check_annotation_axiom(world, s, i)
           
+      if (p == rdf_type) and _INSTANCES_OF_CLASS:
+        Class = onto.world._get_by_storid(o)
+        if not Class is None: # Else it is Thing
+          for parent in Class.ancestors():
+            for l in _INSTANCES_OF_CLASS.get(parent.storid, ()): l._changed()
+            
     world._del_obj_triple_raw_spo = _del_obj_triple_raw_spo_observed
     
     triple_data_method = world._del_data_triple_raw_spod
@@ -320,8 +326,6 @@ def emit(o, props):
   
 
     
-_INSTANCES_OF_CLASS = {} #weakref.WeakValueDictionary()
-
 class StoridList(object):
   def __init__(self, namespace, storids):
     self.namespace = namespace
@@ -348,23 +352,24 @@ class StoridList(object):
     return """<StoridList: %s>""" % list(self)
   
 
+_INSTANCES_OF_CLASS = {} #weakref.WeakValueDictionary()
 
 from owlready2.util import FirstList
 class InstancesOfClass(StoridList):
-  storid = 0 # Fake storid
-  
   def __init__(self, Class, onto = None, order_by = "", lang = "", use_observe = False):
     self._Class         = Class
     self._lang          = lang
+    self._onto          = onto
     self._use_observe   = use_observe
     self._Class_storids = ",".join((["'%s'" % child.storid for child in Class.descendants()]))
+    self.storid         = "_Py%s" % id(self)
     
     if use_observe:
       ws = _INSTANCES_OF_CLASS.get(Class.storid)
       if ws is None: ws = _INSTANCES_OF_CLASS[Class.storid] = weakref.WeakSet()
       ws.add(self)
       
-    StoridList.__init__(self, onto or Class.namespace.world, None)
+    StoridList.__init__(self, Class.namespace.world, None)
     
     if order_by:
       if   isinstance(order_by, str):
@@ -378,13 +383,15 @@ class InstancesOfClass(StoridList):
     return """<InstancesOfClass "%s": %s>""" % (self._Class, list(self))
   
   def _update(self):
+    if self._onto: extra = " AND c = %s" % self._onto.graph.c
+    else:          extra = ""
     if self._order_by:
       if self._lang:
-        self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ? AND o IN (%s) ORDER BY (select q2.o FROM quads q2 WHERE q2.s = objs.s AND q2.p = ? AND q2.d LIKE '@%s')""" % (self._Class_storids, self._lang), (rdf_type, self._order_by))]
+        self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ?%s AND o IN (%s) ORDER BY (select q2.o FROM quads q2 WHERE q2.s = objs.s AND q2.p = ? AND q2.d LIKE '@%s')""" % (extra, self._Class_storids, self._lang), (rdf_type, self._order_by))]
       else:
-        self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ? AND o IN (%s) ORDER BY (select q2.o FROM quads q2 WHERE q2.s = objs.s AND q2.p = ?)""" % self._Class_storids, (rdf_type, self._order_by))]
+        self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ?%s AND o IN (%s) ORDER BY (select q2.o FROM quads q2 WHERE q2.s = objs.s AND q2.p = ?)""" % (extra, self._Class_storids), (rdf_type, self._order_by))]
     else:
-      self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ? AND o IN (%s)""" % self._Class_storids, (rdf_type,)).fetchall()]
+      self._storids = [x[0] for x in self.namespace.graph.execute("""SELECT s FROM objs WHERE p = ?%s AND o IN (%s)""" % (extra, self._Class_storids), (rdf_type,)).fetchall()]
       
   def _get_storids(self):
     if self._storids is None: self._update()
@@ -394,18 +401,16 @@ class InstancesOfClass(StoridList):
     if self._storids is None: self._update()
     return StoridList(self.namespace, self._storids)
   
-  def _changed(self):
+  def _changed(self, onto = None):
+    if onto and (not onto is self._onto): return
     observation = self.namespace.world._observations.get(self.storid)
     self._storids = None
-    if observation:
-      observation.call(["Inverse(http://www.w3.org/1999/02/22-rdf-syntax-ns#type)"])
-      
+    if observation: observation.call(["Inverse(http://www.w3.org/1999/02/22-rdf-syntax-ns#type)"])
+    
   def add(self, o):
     if not self.Class in o.is_a: o.is_a.append(self.Class)
-    #if not self._use_observe: self._changed()
   append = add
   
   def remove(self, o):
     destroy_entity(o)
-    #self._changed()
     
