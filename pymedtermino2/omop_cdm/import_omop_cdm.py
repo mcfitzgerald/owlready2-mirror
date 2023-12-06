@@ -20,12 +20,16 @@
 # Please change the following paths and options:
 
 # Path to the OMOP-CDM CSV specification file
-OMOP_CDM_v6_FILE  = "./abimed/omop_cdm/OMOP_CDM_v6_0.csv"
+# You can get the CSV file from: https://github.com/OHDSI/CommonDataModel/tree/main/inst/csv
+OMOP_CDM_v6_FILE = "/home/jiba/telechargements/base_med/omop_cdm/OMOP_CDMv6.0_Field_Level.csv"
 
 # Path where the OMOP-CDM ontology file will be created
-OMOP_ONTOLOGY_FILE = "./abimed/onto/omop_cdm_v6.owl"
+OMOP_ONTOLOGY_FILE = "/tmp/omop_cdm_v6.owl"
 
-# If true, split the ontology in several files, corresponding to teh various part of the OMOP-CDM model (clinical, survey, etc)
+# Use old format (for CSV files that do not end with Field_Level.csv)
+OLD_FORMAT = False
+
+# If true, split the ontology in several files, corresponding to the various part of the OMOP-CDM model (clinical, survey, etc)
 MODULAR = False
 
 # True to fix datetime datatype (e.g. datetime attribute has datetime datatype and not date). In doubt, keep the default value
@@ -37,7 +41,7 @@ REVERSE_RELATIONS = { "person_id", "note_id", "visit_detail_id", "visit_occurren
 # Sets of tables. Please keep the default values, unless importing OMOP-CDM in a version different than 6.0
 VOCABULARIES_TABLES  = {'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship', 'relationship', 'concept_synonym', 'concept_ancestor', 'source_to_concept_map', 'drug_strength', }
 METADATA_TABLES      = {'cdm_source', 'metadata', }
-CLINICAL_TABLES      = {'person', 'observation_period', 'visit_occurrence', 'visit_detail', 'condition_occurrence', 'drug_exposure', 'procedure_occurrence', 'device_exposure', 'measurement', 'note', 'note_nlp', }
+CLINICAL_TABLES      = {'person', 'observation_period', 'visit_occurrence', 'visit_detail', 'condition_occurrence', 'drug_exposure', 'procedure_occurrence', 'device_exposure', 'measurement', 'note', 'note_nlp', 'death' }
 SURVEY_TABLES        = {'survey_conduct', 'observation', 'specimen', 'fact_relationship', }
 HEALTH_SYSTEM_TABLES = {'location', 'location_history', 'care_site', 'provider', }
 ECONOMICS_TABLES     = {'payer_plan_period', 'cost', }
@@ -97,8 +101,15 @@ def get_prioritary_namespace(*namespaces):
 TABLES = set(TABLES)
 prop_2_domain_2_range = defaultdict(dict)
 
-FIELDS = { field for field, required, type, description, table in lignes }
-
+if OLD_FORMAT:
+  FIELDS = { field for field, *drop_it in lignes }
+else:
+  FIELDS = set()
+  for table, field, *drop_it in lignes:
+    if field.startswith('\\"'): field = field[2:]
+    if field.endswith  ('\\"'): field = field[:-2]
+    FIELDS.add(field)
+    
 def calcule_nom_owl(s, table):
   if   s.startswith("%s_" % table): s = s[len(table) + 1:]
   elif table.endswith("_exposure") or table.endswith("_occurrence") or table.endswith("_era"):
@@ -153,8 +164,17 @@ for nom in TABLES:
     
 ABSTRACT_CLASSES = [ClinicalElement, BaseVisit, Exposure, Occurrence, Era, BasePerson]
 
-for field, required, type, description, table in lignes:
-    if not table in TABLES: continue
+if OLD_FORMAT:
+  lignes2 = []
+  for field, required, type, description, table in lignes:
+    lignes2.append([table, field, required, type, description, "NA", "NA", "NA", "", "", "", "", ""])
+  lignes = lignes2
+    
+for table, field, required, type, userGuidance, etlConventions, isPrimaryKey, isForeignKey, fkTableName, fkFieldName, fkDomain, fkClass, unique_DQ_identifiers in lignes:
+  if table in TABLES:
+    if field.startswith('\\"'): field = field[2:]
+    if field.endswith  ('\\"'): field = field[:-2]
+    description = "\n".join([i for i in [userGuidance, etlConventions] if i != "NA"])
     type = type.upper()
     
     nom_owl = field
@@ -163,6 +183,12 @@ for field, required, type, description, table in lignes:
       range = Thing
       if field.endswith("_concept_id"):
         range = Concept
+
+      if fkTableName and (fkTableName != "NA"):
+        if ("%s_ID" % fkTableName) == fkFieldName:
+          range = table_2_owl[fkTableName.lower()]
+        else:
+          assert False
         
       else:
         mots = description.split()
@@ -182,11 +208,11 @@ for field, required, type, description, table in lignes:
           if field.endswith("_id"):
             s = field[:-3]
             if s in table_2_owl: range = table_2_owl[s]
-             
-
+            
+            
       candidate_namepaces = [get_namespace(table)]
       if not range is Thing: candidate_namepaces.append(range.namespace)
-
+      
       with get_prioritary_namespace(*candidate_namepaces):
         if field in REVERSE_RELATIONS:
           reverse = True
@@ -201,12 +227,8 @@ for field, required, type, description, table in lignes:
           Prop = types.new_class(nom_owl, (ObjectProperty, FunctionalProperty,))
           Prop.python_name = Prop.name[4:]
           
-        
-        
     else:
       nom_owl = calcule_nom_owl(nom_owl, table)
-      #if   FIX_DATETIME and field.endswith("_datetime"): range = datetime.datetime
-      #elif FIX_DATETIME and field.endswith("_date"):     range = datetime.date
       if   type.startswith("INTEGER"):  range = int
       elif type.startswith("BIGINT"):   range = int
       elif type.startswith("STRING"):   range = str
@@ -237,18 +259,24 @@ for field, required, type, description, table in lignes:
     if reverse: domain, range = range, domain
     prop_2_domain_2_range[Prop][domain] = (range, required, reverse)
     
-    if   Prop.name == "start_datetime": domain.is_a.append(DatetimeDuration)
-    elif Prop.name == "start_date":     domain.is_a.append(DateDuration)
-    elif Prop.name == "datetime":       domain.is_a.append(Event)
-    
+    if   Prop.name == "start_datetime":
+      domain.is_a.append(DatetimeDuration)
+      if OmopCDMThing in domain.is_a: domain.is_a.remove(OmopCDMThing)
+    elif Prop.name == "start_date":
+      domain.is_a.append(DateDuration)
+      if OmopCDMThing in domain.is_a: domain.is_a.remove(OmopCDMThing)
+    elif Prop.name == "datetime":
+      domain.is_a.append(Event)
+      if OmopCDMThing in domain.is_a: domain.is_a.remove(OmopCDMThing)
+      
     attribute_id += 1
-    #Prop.omop_cdm_name.append("%s.%s#%s" % (table_2_owl[table].omop_cdm_name.first(), field, attribute_id))
     Prop.omop_cdm_name.append("%s.%s#%s AS %s" % (table_2_owl[table].omop_cdm_name.first(), field, attribute_id, range0))
     if reverse: reversed_note = "reversed relation, "
     else:       reversed_note = ""
     if description: Prop.comment.en.append("(%sfor %s:) %s" % (reversed_note, table_2_owl[table].name, description))
     
     field_2_owl[field] = Prop
+
 
     
 ABSTRACT_CLASSES_2_CLASSES = { abstract_class : {leaf_class
@@ -305,7 +333,7 @@ for Prop, domain_2_range in prop_2_domain_2_range.items():
       if domain is Thing: continue
       with get_prioritary_namespace(Prop.namespace, domain.namespace):
         domain.is_a.append(Prop.only(range))
-        if required:
+        if required == "Yes":
           if reverse:
             range.is_a.append(Inverse(Prop).some(domain))
           else:
@@ -331,7 +359,12 @@ for Prop in omop_cdm.properties():
   else: d[n] = Prop
 
 
-omop_cdm.save(OMOP_ONTOLOGY_FILE)
+#omop_cdm.save(OMOP_ONTOLOGY_FILE)
+if OLD_FORMAT:
+  omop_cdm.save(OMOP_ONTOLOGY_FILE.replace(".owl", "_old.owl"), format = "ntriples")
+else:
+  omop_cdm.save(OMOP_ONTOLOGY_FILE, format = "ntriples")
+  
 if MODULAR:
   omop_cdm_vocabularies .save(OMOP_ONTOLOGY_FILE.replace(".owl", "_vocabularies.owl"))
   omop_cdm_metadata     .save(OMOP_ONTOLOGY_FILE.replace(".owl", "_metadata.owl"))
