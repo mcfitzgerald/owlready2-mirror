@@ -481,11 +481,12 @@ class FuncSupport(object):
       if len(r1) != 1: return "quads2", 0
       if len(r2) != 1: return tuple(r1)[0], 0
       return tuple(r1)[0], tuple(r2)[0]
-    
+
     elif  expression is None: pass
     elif  expression.name == "STRING":  return "datas", _universal_datatype_2_abbrev[str]
     elif  expression.name == "INTEGER": return "datas", _universal_datatype_2_abbrev[int]
     elif (expression.name == "FLOAT") or (expression.name == "DECIMAL"): return "datas", _universal_datatype_2_abbrev[float]
+    elif  expression.name == "IRI": return "objs", "'o'"
     elif  expression.name == "VAR":
       var = self.parse_var(expression)
       if var.type == "objs": return "objs", "'o'"

@@ -10734,6 +10734,40 @@ onto:patient1 onto:match ?x .
     
     #assert set(i[0] for i in r) == { E_US }
     
+  def test_167(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class Patient(Thing): pass
+      class Patho(Thing): pass
+      class Drug(Thing): pass
+      class has_drug(Patient >> Drug): pass
+      class has_indication(Drug >> Patho): pass
+      
+      p = Patient("patient")
+      d1 = Drug()
+      d2 = Drug()
+      d3 = Drug()
+      p.has_drug = [d1, d2, d3]
+      p1 = Patho("patho1")
+      p2 = Patho()
+      
+      d1.has_indication = [p1]
+      d2.has_indication = [p2]
+
+    sparql = """
+SELECT DISTINCT ?drug WHERE {
+  onto:patient onto:has_drug ?drug .
+  { ?drug onto:has_indication onto:patho1 . }
+  UNION
+  {
+    ?drug rdf:type onto:Drug .
+    FILTER NOT EXISTS { ?drug onto:has_indication ?indication }
+  }
+}"""
+    q, r = self.sparql(world, sparql)
+    assert set(i[0] for i in r) == set([d1, d3])
+    
 # Add test for Pellet
 
 for Class in [Test, Paper]:

@@ -7,6 +7,9 @@
 #Load time 8.173163652420044 s.
 #List class time 8.727483034133911 s.
 
+#Load time 4.900594472885132 s.
+#List class time 5.225318670272827 s.
+
 import sys, time#, cProfile
 
 import owlready2

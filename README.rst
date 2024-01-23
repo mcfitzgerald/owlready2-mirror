@@ -767,7 +767,7 @@ version 2 - 0.46
 
 * Remove warning when Cython module is not available
 * Update import OMOP CDM for their new CSV format
-    
+
 Links
 -----
 
