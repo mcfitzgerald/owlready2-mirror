@@ -653,6 +653,7 @@ class World(_GraphManager):
         elif (obj == owl_named_individual) or (obj == owl_thing):
           if main_type is None: main_type = Thing
         elif 105 <= obj <= 109:              main_type = ObjectPropertyClass;     types.append(self._get_by_storid(obj)) # TransitiveProperty, SymmetricProperty, AsymmetricProperty, ReflexiveProperty, IrreflexiveProperty
+        elif obj == rdfs_datatype:           main_type = Datatype
         else:
           if not main_type: main_type = Thing
           if obj < 0: is_a_bnodes.append((self.graph.context_2_user_context(graph), obj))
@@ -760,6 +761,9 @@ class World(_GraphManager):
         elif len(types) >  1: entity = FusionClass._get_fusion_class(types)(name = name, namespace = namespace, is_a = types)
         else:                 entity = Thing(name = name, namespace = namespace)
         
+      elif main_type is Datatype:
+        types = tuple(is_a_entities) or (Datatype,)
+        entity = DatatypeClass(name, types, { "namespace" : namespace, "storid" : storid } )
         
       else:
         if default_to_none: return None

@@ -767,10 +767,11 @@ version 2 - 0.46
 
 * Remove warning when Cython module is not available
 * Update import OMOP CDM for their new CSV format
+* Basic support for enumerated datatypes (= defined with an equivalent_to and a OneOf)
 * Bugfixes:
   * Fix IRI() return type in SPARQL
 
-    
+
 Links
 -----
 

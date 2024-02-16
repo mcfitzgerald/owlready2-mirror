@@ -5833,6 +5833,38 @@ multiple lines with " and ’ and \ and & and < and > and é.""", "en")
     assert onto.DO.iri == "http://knowledge.graph/wind/DO"
     assert onto.d .iri == "http://knowledge.graph/wind/d"
     
+  def test_format_31(self):
+    world = self.new_world()
+    onto = world.get_ontology("test_datatype_one_of_2.owl").load()
+    
+    assert onto.enu .equivalent_to[0].instances == ["Forcast", "Release"]
+    assert onto.enu2.equivalent_to[0].instances == ["Forcast", "Released"]
+    
+    onto.enu.equivalent_to.append(OneOf([1, 2]))
+
+    assert onto.enu .equivalent_to[0].instances == ["Forcast", "Release"]
+    assert onto.enu .equivalent_to[1].instances == [1, 2]
+    
+  def test_format_32(self):
+    world = self.new_world()
+    onto = world.get_ontology("http://test.org/onto.owl")
+    
+    with onto:
+      class enu(Datatype):
+        equivalent_to = [OneOf(["a", "b"])]
+        
+    self.assert_triple(enu.storid, rdf_type, rdfs_datatype, world = world)
+    self.assert_triple(enu.storid, owl_equivalentclass, -1, world = world)
+    self.assert_triple(-1, rdf_type, rdfs_datatype, world = world)
+    self.assert_triple(-1, owl_oneof, -2, world = world)
+    
+    with onto:
+      class C(Thing): pass
+      class prop(C >> enu): pass
+      
+    self.assert_triple(prop.storid, rdf_range, enu.storid, world = world)
+    
+    
   def test_search_1(self):
     world = self.new_world()
     n = world.get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test").load()

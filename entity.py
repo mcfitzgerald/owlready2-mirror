@@ -791,9 +791,19 @@ SELECT q1.s FROM objs q1 WHERE q1.p=6 AND (q1.o IN (SELECT s FROM prelim1_objs) 
             
           for v in new - old:
             Class.namespace.ontology._add_data_triple_spod(Class.storid, Prop.storid, *Class.namespace.ontology._to_rdf(v))
-          
-          
             
+            
+            
+class DatatypeClass(EntityClass):
+  namespace = owlready
+  
+  _owl_type         = rdfs_datatype
+  _owl_equivalent   = owl_equivalentclass
+  _rdfs_is_a        = rdf_type
+  
+class Datatype(metaclass = DatatypeClass):
+  namespace = rdfs
+  
 
 
 def _inherited_property_value_restrictions(x, Prop, already):

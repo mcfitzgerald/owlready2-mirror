@@ -40,6 +40,8 @@ import owlready2.namespace, owlready2.entity, owlready2.prop, owlready2.class_co
 owlready2.triplelite.Or                     = Or
 owlready2.namespace.EntityClass             = EntityClass
 owlready2.namespace.ThingClass              = ThingClass
+owlready2.namespace.DatatypeClass           = DatatypeClass
+owlready2.namespace.Datatype                = Datatype
 owlready2.namespace.PropertyClass           = PropertyClass
 owlready2.namespace.AnnotationPropertyClass = AnnotationPropertyClass
 owlready2.namespace.ObjectPropertyClass     = ObjectPropertyClass

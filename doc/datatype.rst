@@ -4,6 +4,34 @@ Datatypes
 Owlready automatically recognizes and translates basic datatypes to Python, such as string, int, float, etc.
 
 
+Creating enumerated datatypes
+-----------------------------
+
+Enumerated datatype can be created as follows with Owlready:
+
+::
+   
+   >>> with onto:
+   ...   class MyEnum(Datatype):
+   ...     equivalent_to = [ OneOf(["Male", "Female", "Other"]) ]
+
+The enumerated datatype can be used in data property ranges:
+
+::
+   
+   >>> with onto:
+   ...   class my_prop(DataProperty):
+   ...     range = [ MyEnum ]
+
+
+The list of enumerated values can be queried as follows:
+   
+::
+   
+   >>> onto.MyEnum.equivalent_to[0].instances
+   ["Male", "Female", "Other"]
+
+   
 Creating custom datatypes
 -------------------------
 
