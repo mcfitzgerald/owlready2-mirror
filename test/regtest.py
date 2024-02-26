@@ -1616,7 +1616,6 @@ class Test(BaseTest, unittest.TestCase):
       o8 = O(s = [o5])
       
     r = set(o6.q.indirect())
-    print(r)
     assert r == { o5, o1 }
     
   def test_individual_15_2(self):
@@ -1639,7 +1638,6 @@ class Test(BaseTest, unittest.TestCase):
       o8 = O(s = [o5])
       
     r = set(o6.q.indirect())
-    print(r)
     assert r == { o5, o1, o4, o3 }
     
   def test_individual_16(self):
@@ -10799,7 +10797,82 @@ SELECT DISTINCT ?drug WHERE {
 }"""
     q, r = self.sparql(world, sparql)
     assert set(i[0] for i in r) == set([d1, d3])
+
+  def test_168(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p1(C >> int): pass
+      class p2(C >> int): pass
+
+      c1 = C(p1 = [], p2 = [1])
+      c2 = C(p1 = [1], p2 = [2, 3])
+      c3 = C(p1 = [2], p2 = [1, 4])
+      c4 = C(p1 = [3], p2 = [5])
+      
+      sparql = """
+SELECT ?x WHERE {
+  { ?x onto:p1 1. } UNION { ?x onto:p2 1. }
+  { ?x onto:p1 3. } UNION { ?x onto:p2 3. }
+}
+"""
+    q, r = self.sparql(world, sparql)
+    assert r == [[c2]]
     
+  def test_169(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p1(C >> int): pass
+      class p2(C >> int): pass
+
+      c1 = C(p1 = [], p2 = [1])
+      c2 = C(p1 = [1], p2 = [2, 3])
+      c3 = C(p1 = [2], p2 = [1, 4])
+      c4 = C(p1 = [3], p2 = [5, 2])
+      
+      sparql = """
+SELECT ?x WHERE {
+  { ?x onto:p1 1. } UNION { ?x onto:p2 2. }
+  { ?x onto:p1 3. } UNION { ?x onto:p2 4. }
+}
+"""
+    q, r = self.sparql(world, sparql, compare_with_rdflib = False)
+    assert r == [[c4]]
+      
+  def test_170(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class p1(C >> int): pass
+      class p2(C >> int): pass
+
+      c1 = C(p1 = [], p2 = [1])
+      c2 = C(p1 = [1], p2 = [2, 3])
+      c3 = C(p1 = [2], p2 = [1, 4])
+      c4 = C(p1 = [3], p2 = [5, 2])
+      
+      sparql = """
+SELECT (1 AS ?r) WHERE {
+  { ??1 onto:p1 1. } UNION { ??1 onto:p2 2. }
+  { ??1 onto:p1 3. } UNION { ??1 onto:p2 4. }
+}
+"""
+    q, r = self.sparql(world, sparql, [c1], compare_with_rdflib = False)
+    assert r == []
+
+    q, r = self.sparql(world, sparql, [c2], compare_with_rdflib = False)
+    assert r == []
+
+    q, r = self.sparql(world, sparql, [c3], compare_with_rdflib = False)
+    assert r == []
+    
+    q, r = self.sparql(world, sparql, [c4], compare_with_rdflib = False)
+    assert r == [[1]]
+
 # Add test for Pellet
 
 for Class in [Test, Paper]:

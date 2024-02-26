@@ -194,13 +194,6 @@ class Translator(object):
       self.preliminary_selects.append(s)
       
       
-    # if copy_vars:
-    #   if hasattr(nested_inside, "vars"):
-    #     s.vars = nested_inside.vars.copy()
-    #   elif hasattr(nested_inside, "parent") and nested_inside.parent:
-    #     s.vars = nested_inside.parent.vars.copy()
-
-        
     extra_binds = extra_binds or []
     if isinstance(selects, list): # Otherwise, it is "SELECT *"
       for i, select in enumerate(selects):
@@ -707,12 +700,14 @@ class SQLQuery(FuncSupport):
   def parse_selects(self, selects):
     if selects is None:
       self.raw_selects = "*"
+      self.has_select = True
     else:
       self.raw_selects = selects
       vars_needed_for_select = { self.parse_var(select) for select in selects if (isinstance(select, rply.Token) and (select.name == "VAR")) or (isinstance(select, str)) }
       for var in vars_needed_for_select:
         self.expand_referenced_vars(var, self.vars_needed_for_select)
-        
+      self.has_select = bool(self.raw_selects)
+      
   def expand_referenced_vars(self, var, r):
     r.add(var)
     if var.bind:
@@ -753,11 +748,12 @@ class SQLQuery(FuncSupport):
         else:
           conditions = self.conditions
           
-        for column in sub.columns:  
-          var = self.parse_var(column.var)
-          var.update_type(column.type)
-          if not column.name.endswith("d"):
-            self.create_conditions(conditions, table, column.name, var)
+        if sub.has_select:
+          for column in sub.columns:  
+            var = self.parse_var(column.var)
+            var.update_type(column.type)
+            if not column.name.endswith("d"):
+              self.create_conditions(conditions, table, column.name, var)
 
   def parse_triples(self, triples):
     if self.triples: raise ValueError("Cannot parse triples twice!")
@@ -1151,7 +1147,7 @@ class SQLQuery(FuncSupport):
         var_name, sql, sql_type, sql_d, sql_d_type = do_select(select)
         
       if sql is None:
-        if not self.name: # Inside a UNION => the variable is not available in this alternative of th UNION
+        if not self.name: # Inside a UNION => the variable is not available in this alternative of the UNION
           sql = "NULL"
           sql_type = "objs"
         else:
@@ -1215,10 +1211,12 @@ class SQLCompoundQuery(object):
     self.queries                 = []
     self.preliminary             = False
     self.optional                = False
+    self.has_select              = False
     
   def __repr__(self): return "<%s '%s'>" % (self.__class__.__name__, self.sql())
   
   def append(self, query, operator = ""):
+    if query.has_select: self.has_select = True
     query.operator = operator
     self.queries.append(query)
     
@@ -1366,6 +1364,7 @@ class SQLStaticValuesPreliminaryQuery(object):
     self.translator    = translator
     self.name          = name
     self.static_values = static_values
+    self.has_select    = True
     
     if self.static_values.valuess:
       self.nb_value = len(self.static_values.valuess[0])

@@ -770,6 +770,7 @@ version 2 - 0.46
 * Basic support for enumerated datatypes (= defined with an equivalent_to and a OneOf)
 * Bugfixes:
   * Fix IRI() return type in SPARQL
+  * Fix SPARQL queries with two UNIONs when there is no shared variables between the unions members
 
 
 Links
