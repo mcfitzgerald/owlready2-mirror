@@ -127,7 +127,7 @@ In addition, Pellet also supports the inference of data property values, using t
 
 ::
 
-   >>> sync_reasoner(infer_property_values = True, infer_data_property_values = True)
+   >>> sync_reasoner_pellet(infer_property_values = True, infer_data_property_values = True)
 
 
 
