@@ -253,7 +253,7 @@ class CoalescedObservations(object):
     
 coalesced_observations = CoalescedObservations()
 
-    
+
 
 def _prepare_tuple_o(o, world):
   if isinstance(o, tuple):
@@ -272,9 +272,12 @@ def _prepare_args(o, world):
       world = o0.namespace.world
       if isinstance(o[0], AnnotatedRelation): o = (o[0]._as_triple(), o[1], o[2])
       o     = _prepare_tuple_o(o, world)
+    elif hasattr(o, "storid"):
+      world = o.namespace.world
+      o = o.storid
     else:
       world = o.namespace.world
-      o     = o.storid
+      o     = "_Py%s" % id(o)
   if world is owl_world: return None, None
   return o, world
 
@@ -290,7 +293,7 @@ def observe(o, listener, world = None):
   observation = world._observations.get(o)
   if not observation: observation = world._observations[o] = Observation(o)
   observation.add_listener(listener)
-    
+  
 def isobserved(o, listener = None, world = None):
   if o is None: return False
   if hasattr(o, "is_observed"): return o.is_observed(listener)
@@ -350,7 +353,9 @@ class StoridList(object):
     
   def __repr__(self):
     return """<StoridList: %s>""" % list(self)
-  
+
+  def get_instances(self): return list(self)
+  instances = property(get_instances)
 
 _INSTANCES_OF_CLASS = {} #weakref.WeakValueDictionary()
 
@@ -362,7 +367,6 @@ class InstancesOfClass(StoridList):
     self._onto          = onto
     self._use_observe   = use_observe
     self._Class_storids = ",".join((["'%s'" % child.storid for child in Class.descendants()]))
-    self.storid         = "_Py%s" % id(self)
     
     if use_observe:
       ws = _INSTANCES_OF_CLASS.get(Class.storid)
@@ -403,12 +407,13 @@ class InstancesOfClass(StoridList):
   
   def _changed(self, onto = None):
     if onto and (not onto is self._onto): return
-    observation = self.namespace.world._observations.get(self.storid)
+    #observation = self.namespace.world._observations.get(self._Class.storid)
+    observation = self.namespace.world._observations.get("_Py%s" % id(self))
     self._storids = None
     if observation: observation.call(["Inverse(http://www.w3.org/1999/02/22-rdf-syntax-ns#type)"])
     
   def add(self, o):
-    if not self.Class in o.is_a: o.is_a.append(self.Class)
+    if not self._Class in o.is_a: o.is_a.append(self._Class)
   append = add
   
   def remove(self, o):

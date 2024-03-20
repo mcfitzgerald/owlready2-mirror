@@ -100,13 +100,13 @@ class Graph(BaseMainGraph):
     #     self.db.execute("""PRAGMA locking_mode = NORMAL""")
     
     options = []
-    #options = ["cache=shared"]
     if filename == ":memory:":
       filename = str(id(self))
       options.append("mode=memory")
       
     self.read_only = read_only
     if read_only: options.append("mode=ro")
+    if enable_thread_parallelism: options.append("cache=shared")
     
     uri = "file:%s" % filename
     if options: uri = "%s?%s" % (uri, "&".join(options))
@@ -174,14 +174,14 @@ class Graph(BaseMainGraph):
       self.has_thread_parallelism = True
       if exclusive: raise ValueError("Cannot enable thread parallelism with exclusive mode! Please add 'exclusive=False'.")
       self.connexion_pool  = _ConnexionPool(uri)
-        
+      
       
     self.c_2_onto          = {}
     self.onto_2_subgraph   = {}
     self.world             = world
     self.c                 = None
     self.nb_added_triples  = 0
-
+    
     if lock:
       self.lock = lock
       self.acquire_write_lock = self._acquire_write_lock_with_lock
@@ -384,7 +384,7 @@ class Graph(BaseMainGraph):
   def _new_numbered_iri(self, prefix):
     i = self.execute("""SELECT i FROM last_numbered_iri WHERE prefix=?""", (prefix,)).fetchone()
     if i is None: return self._new_numbered_iri_2(prefix)
-
+    
     i = i[0] + 1
     iri = "%s%s" % (prefix, i)
     if self.execute("""SELECT storid FROM resources WHERE iri=?""", (iri,)).fetchone(): # Already exists, due to a name clash, e.g. "c1" + "1" vs "c" + "11"
@@ -875,6 +875,7 @@ class SubGraph(BaseSubGraph):
     self._new_numbered_iri = parent._new_numbered_iri
     
     self.parent.onto_2_subgraph[onto] = self
+    self.read_only = parent.read_only
     
   def import_triples_from_queue(self, queue, filename = None, delete_existing_triples = True):
     cur = self.db.cursor()
@@ -1046,8 +1047,8 @@ class SubGraph(BaseSubGraph):
     return self.execute("SELECT last_update FROM ontologies WHERE c=?", (self.c,)).fetchone()[0]
   
   def set_last_update_time(self, t):
-    self.execute("UPDATE ontologies SET last_update=? WHERE c=?", (t, self.c))
-  
+    if not self.read_only: self.execute("UPDATE ontologies SET last_update=? WHERE c=?", (t, self.c))
+    
   def destroy(self):
     self.execute("DELETE FROM objs WHERE c=?",       (self.c,))
     self.execute("DELETE FROM datas WHERE c=?",      (self.c,))

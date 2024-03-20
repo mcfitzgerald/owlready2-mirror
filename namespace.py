@@ -823,7 +823,7 @@ class Ontology(Namespace, _GraphManager):
   def get_base_iri(self): return self._base_iri
   def set_base_iri(self, new_base_iri, rename_entities = True):
     if self.world.graph: self.world.graph.acquire_write_lock()
-
+    
     try:
       del self.world.ontologies[self._base_iri]
       del self._namespaces[self._base_iri]
@@ -856,7 +856,7 @@ class Ontology(Namespace, _GraphManager):
   
   def destroy(self, update_relation = False, update_is_a = False):
     self.world.graph.acquire_write_lock()
-
+    
     try:
       if update_relation:
         for s, p in self.graph.execute("""SELECT DISTINCT s, p FROM quads WHERE c=?""", (self.graph.c,)):
@@ -875,7 +875,9 @@ class Ontology(Namespace, _GraphManager):
 
       del self.world.ontologies[self._base_iri]
       if self._orig_base_iri != self._base_iri: del self.world.ontologies[self._orig_base_iri]
-
+      
+      self.graph.execute("DELETE FROM last_numbered_iri WHERE prefix LIKE '%s%%'" % self.base_iri)
+      
       self.graph.destroy()
       for entity in list(self.world._entities.values()):
         if entity.namespace.ontology is self: del self.world._entities[entity.storid]
@@ -884,7 +886,7 @@ class Ontology(Namespace, _GraphManager):
         for entity in entities_needing_update:
           with LOADING:
             entity.is_a = [self.world._get_by_storid(o) for o in self.world.graph._get_obj_triples_sp_o(entity.storid, rdf_type)]
-            
+
     finally:
       self.world.graph.release_write_lock()
 
@@ -943,7 +945,7 @@ class Ontology(Namespace, _GraphManager):
       f = fileobj or _get_onto_file(self._orig_base_iri, self.name, "r", only_local)
     else:
       f = ""
-      
+    
     if reload_if_newer and not(f.startswith("http:") or f.startswith("https:")):
       reload = os.path.getmtime(f) > self.graph.get_last_update_time()
       

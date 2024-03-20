@@ -10872,7 +10872,9 @@ SELECT (1 AS ?r) WHERE {
     
     q, r = self.sparql(world, sparql, [c4], compare_with_rdflib = False)
     assert r == [[1]]
-
+    
+    
+      
 # Add test for Pellet
 
 for Class in [Test, Paper]:
