@@ -28,8 +28,6 @@ def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3, s
     if onto.world.graph.has_changes():
       raise RuntimeError("Cannot execute parallelized queries on uncommited database. Please call World.save() before.")
     
-    from gevent.hub import get_hub
-    
     import _thread
     lock = _thread.allocate_lock()
     def f():
@@ -44,7 +42,6 @@ def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3, s
     raws = [None] * len(prepared_queries)
     
     if spawn is True: spawn = _default_spawn
-    
     threads = [spawn(f) for j in range(nb_thread)]
     for thread in threads: thread.join()
     
@@ -58,8 +55,10 @@ def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3, s
       if sleep and (i + 1) % nb_queries_before_sleep == 0: sleep()
       
     with onto:
-      r = [q.execute(params, raw) for raw, q, params in zip(raws, prepared_queries, paramss)]
-      
+      return [q.execute(params, raw) for raw, q, params in zip(raws, prepared_queries, paramss)]
+    
     #with onto:
     #  return [q.execute(params) for q, params in zip(prepared_queries, paramss)]
-      
+
+
+

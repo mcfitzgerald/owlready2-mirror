@@ -42,8 +42,8 @@ def all_combinations(l):
 
 class _Connexion(object):
   def __init__(self, pool, uri):
-    self.pool = pool
-    self.db   = sqlite3.connect(uri, check_same_thread = False, uri = True)
+    self.pool    = pool
+    self.db      = sqlite3.connect(uri, check_same_thread = False, uri = True)
     self.execute = self.db.execute
     #self.execute("PRAGMA journal_mode=WAL")
     #self.execute("PRAGMA read_uncommitted=1")
@@ -107,7 +107,7 @@ class Graph(BaseMainGraph):
       
     self.read_only = read_only
     if read_only: options.append("mode=ro")
-    if enable_thread_parallelism: options.append("cache=shared")
+    #if enable_thread_parallelism: options.append("cache=shared") # Actually reduces performance, because of synchronization for accessing the shared cache!
     
     uri = "file:%s" % filename
     if options: uri = "%s?%s" % (uri, "&".join(options))
@@ -172,8 +172,8 @@ class Graph(BaseMainGraph):
       
     self.has_thread_parallelism = enable_thread_parallelism
     if enable_thread_parallelism:
-      self.has_thread_parallelism = True
       if exclusive: raise ValueError("Cannot enable thread parallelism with exclusive mode! Please add 'exclusive=False'.")
+      self.has_thread_parallelism = True
       self.connexion_pool  = _ConnexionPool(uri)
       
       

@@ -3050,7 +3050,6 @@ class Test(BaseTest, unittest.TestCase):
     onto .graph._add_data_triple_raw_spod(c.storid, p.storid, *world._to_rdf(3))
     onto .graph._set_data_triple_raw_spod(c.storid, f.storid, *world._to_rdf("b"))
     
-    world.graph.dump()
     assert c.p == [1, 2]
     assert c.f == "a"
     
@@ -8373,33 +8372,34 @@ for i in range(500):
       for j in range(10):
         q = world.prepare_sparql("""SELECT ?x { ?x rdfs:label ?l . FILTER(LIKE(?l, "C item %s%%%s")) }""" % (i, j))
         qs.append(q)
-        
-    for q in qs:list(q.execute())
     
     import gevent.hub
     gevent_spawn = gevent.hub.get_hub().threadpool.apply_async
     
-    r = [list(i) for i in owlready2.sparql.execute_many(onto, qs, [[]] * len(qs), gevent_spawn)]
+    # First execution is often slower
+    for q in qs: list(q.execute())
+    r = [list(i) for i in owlready2.sparql.execute_many(onto, qs, [[]] * len(qs))]
     
-    #qs = qs * 9
+    qs = qs * 9
     
     r1 = []
-    t = time.time()
+    t = time.perf_counter()
     for q in qs: r1.append(list(q.execute()))
-    t_mono = time.time() - t
+    t_mono = time.perf_counter() - t
     
-    t = time.time()
+    t = time.perf_counter()
     r2 = [list(i) for i in owlready2.sparql.execute_many(onto, qs, [[]] * len(qs))]
-    t_para = time.time() - t
+    t_para = time.perf_counter() - t
     print("%s s VS %s s with thread parallelization" % (t_mono, t_para))
-    
-    t = time.time()
-    r2 = [list(i) for i in owlready2.sparql.execute_many(onto, qs, [[]] * len(qs), gevent_spawn)]
-    t_para = time.time() - t
-    print("%s s VS %s s with GEvent threadpool parallelization" % (t_mono, t_para))
-    
     assert r1 == r2
-    #assert t_para < t_mono
+    assert t_para < t_mono
+    
+    t = time.perf_counter()
+    r3 = [list(i) for i in owlready2.sparql.execute_many(onto, qs, [[]] * len(qs), gevent_spawn)]
+    t_para = time.perf_counter() - t
+    print("%s s VS %s s with GEvent threadpool parallelization" % (t_mono, t_para))
+    assert r1 == r2
+    assert t_para < t_mono
     
   def xxx_test_parallel_7(self):
     world = World(filename = "/home/jiba/tmp/pym.sqlite3", exclusive = False, enable_thread_parallelism = True)
