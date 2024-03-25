@@ -285,7 +285,10 @@ Combining multiprocessing with cooperative microthreads
 -------------------------------------------------------
 
 Owlready (>= 0.46) can combine together both multiprocessing and cooperative microthreads.
-You need to store the quadstore on disk, and to open it with the "exclusive = False" and "extra_lock" arguments,
+This is interesting if you need microthreads (e.g. because you are using WebSockets) and you want to take advantage of
+multiprocessing for improving performances.
+
+For that, you need to store the quadstore on disk, and to open it with the "exclusive = False" and "extra_lock" arguments,
 which use the given lock in addition to the SQLite lock (while the lock argument uses it instead of):
 
 ::
