@@ -4,29 +4,31 @@ Parallelism, multiprocessing and synchronization
 Parallelism consist in executing several part of your program in parallel.
 Three options are possible:
 
- * cooperative microthread (e.g. greenlets with GEvent): it allows running several "greenlet" in parallel,
+ * **cooperative microthread (e.g. greenlets with GEvent):** it allows running several "greenlet" in parallel,
    switching from one to others, but it does not actually run several commands in parallel and increase performances.
    Nevertheless, it is very interesting in a server setting: 
- * multi-thread parallelism: it allows sharing data and objects between threads, however,
+ * **multi-thread parallelism:** it allows sharing data and objects between threads, however,
    Python has poor multithreading supports (due to the global interpreter lock (GIL), only one thread at a time may execute Python commands).
- * multi-process parallelism: it allows executing Python commands in parallel,
+ * **multi-process parallelism:** it allows executing Python commands in parallel,
    however, data sharing is more difficult and objects cannot be shared between processes. In addition, keep in mind that
    Owlready does not update the local Python objects from the quadstore if they are modified by other processes.
    
 Owlready (>= 0.41) supports all options:
 
  * cooperative microthread can be used in a server setting, in order to let the server answer a simple/small request while a long request is running.
- * multi-thread parallelism can be used to parallelize long SPARQL queries (only the SQL query is parallelized, allowing to run Python commands meanwhile). There is no other interesting in multi-threading, due to Python's GIL.
- * multi-process parallelism can be used to run several process in parallel.
+ * multi-thread parallelism can be used to parallelize sets of long SPARQL queries (only the SQL query is parallelized, allowing to run Python commands meanwhile). There is no other interesting in multi-threading, due to Python's GIL.
+ * multi-process parallelism can be used to run several processes in parallel.
+ * cooperative microthread and multi-process parallelism can also be combined together.
 
 Two difficulties arise when using parallelism:
 
 * Sharing data between processes is complex. When using Owlready, the easier solution is to put the quadstore
-  with the ontology data on disk.
-* Sensible parts of the code must be synchronized, e.g. one should avoid that severa processes write in the quadstore
+  with the ontology data on disk. This does not apply to cooperative microthreads and threads.
+* Sensible parts of the code must be synchronized, e.g. one should avoid that several threads or processes write in the quadstore
   at the same time.
 
 Several web application servers use multiple processes, and thus you will also encounter these difficulties when using them.
+For both microthreads and/or multiple processes, I recommend the `Gunicorn <https://gunicorn.org/>`_ web server.
 
 
 Parallelized file parsing
@@ -37,19 +39,21 @@ For huge OWL file (> 8 Mb), Owlready (>= 0.41) automatically uses a separate pro
 on huge ontologies.
 
 
-Thread-based parallel execution of SPARQLqueries
-------------------------------------------------
+Thread-based parallel execution of SPARQL queries
+-------------------------------------------------
 
-This is the simplest options, and probably the best if you have long SPARQL queries.
+This is the simplest option, and probably the best if you have lots of long SPARQL queries.
 Since version 0.41, Owlready supports some level of thread-based parallelization, for increasing performances
 by executing several SPARQL queries in parallel. It does not require to care about synchronization or data sharing.
 
-In order to use this feature, you first need to use a World stored in a local file,
+In order to use this feature, you first need to use a World stored on disk in a local file,
 to deactive exclusive mode and to activate thread parallelism support, as follows:
 
 ::
    
-   >>> default_world.set_backend(filename = "my_quadstore.sqlite3", exclusive = False, enable_thread_parallelism = True)
+   >>> default_world.set_backend(filename  = "my_quadstore.sqlite3",
+                                 exclusive = False,
+                                 enable_thread_parallelism = True)
 
 When thread parallelism is activated, Owlready opens 3 additional connexions to the SQLite3 database storing the quadstore,
 allowing 3 parallel threads.
@@ -92,7 +96,7 @@ Here is a typical usage:
    >>> import owlready2.sparql
    >>> results = [list(gen) for gen in owlready2.sparql.execute_many(my_onto, queries, queries_params)]
 
-If you are also using Gevent (or another similar library), you may use the Gevent thread pool.
+If you are also using cooperative microthreads with Gevent, you may use the Gevent thread pool.
 This can be done by providing a "spawn" function to execute_many(). The spawn function must accept a
 callable with no argument, start a thread executing that callable, and return the thread object (which is expected to have
 a .join() method). Here is an example for Gevent:
@@ -131,7 +135,8 @@ Cooperative microthreads (e.g. GEvent)
 
 Microthreads will not improve the performances of Owlready, however, they will allow running several tasks in parallel,
 which is interesting if you need to perform small tasks during long tasks (e.g. in a server), or if some part of your
-program is waiting on an external, non-Python, task (e.g. a network call, including the use of a server database like Postgresql).
+program is waiting on an external, non-Python, task (e.g. a network call, including the use of a server database
+like Postgresql).
 
 Synchronization
 ...............
@@ -152,7 +157,7 @@ For using Owlready with cooperative microthreads, you need to:
   This prevents multiple writes at the same time.
   For improving performances, you should also avoid long computation inside "with ontology:" blocks.
   
-* Switch to other microthreads when desired (e.g. by calling gevent.sleep(0)).
+* Switch to other microthreads when desired (by calling gevent.sleep(0)).
   To let other microthreads write in the quadstore, you should do that outside "with ontology:" blocks.
   
 Other synchronization tasks (listed below, for multiprocessing) are not needed for microthreads.
@@ -163,8 +168,12 @@ Multiprocessing
 
 Multiprocessing requires synchronization, which can be very complex (and may have a significant performance cost).
 
-Multiprocessing is recommended mostly when using a read-only quadstore, because Owlready does not update the local
+Multiprocessing is recommended when using a read-only quadstore, because Owlready does not update the local
 Python objects from the quadstore if they are modified by another process.
+
+Owlready does not update the local Python objects from the quadstore when they are modified by another process.
+Consequently, multiprocessing is recommended when using a read-only quadstore, or when the data can be split between
+processes. For example, in a medical application, each process might be in charge of a sub-set of the patients.
 
 
 Synchronization
@@ -172,12 +181,25 @@ Synchronization
 
 For using Owlready with multiple processes, and sharing the quadstore between processes, you need to:
 
-* Store the quadstore on disk.
-* Open the quadstore in non-exclusive mode (exclusive = False in set_backend()).
+* Store the quadstore on disk, and open the quadstore in non-exclusive mode (exclusive = False in set_backend()).
+  For example:
+
+  ::
+     
+     >>> default_world.set_backend(filename  = "your_quadstore.sqlite3",
+     ...                           exclusive = False)
+       
 * Perform each modification to an ontology inside a "with ontology:" block. Owlready maintain a lock for each
   quadstore, which prevents multiple writes at the same time.
   Thus, for improving performances, you should also avoid long computation inside "with ontology:" blocks.
+* You may also use "with world:" blocks to synchronize on the quadstore, but without specifying a particular ontology.
 * Call World.save() at the end of each "with ontology:" block, in order to commit the changes to the quadstore database.
+* If an individual may have been modified by another process, you can use the .reload() method to force reloading its
+  property values:
+
+  ::
+     
+     >>> individual.reload()
 
 
 Server example
@@ -256,4 +278,22 @@ The previous server example can also be run with `uWSGI <https://uwsgi-docs.read
 ::
 
    uwsgi --http 127.0.0.1:5000 --plugin python -p 5 --module test:app
+
+
+
+Combining multiprocessing with cooperative microthreads
+-------------------------------------------------------
+
+Owlready (>= 0.46) can combine together both multiprocessing and cooperative microthreads.
+You need to store the quadstore on disk, and to open it with the "exclusive = False" and "extra_lock" arguments,
+which use the given lock in addition to the SQLite lock (while the lock argument uses it instead of):
+
+::
+   
+   >>> gevent.lock
+   >>> default_world.set_backend(filename   = "your_quadstore.sqlite3",
+   ...                           exclusive  = False,
+   ...                           extra_lock = gevent.lock.RLock())
+
+You need to follow the synchronization rules for both microthreads and processes, as explained above.
 
