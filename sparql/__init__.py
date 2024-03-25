@@ -23,8 +23,8 @@ def _default_spawn(f):
   return thread
 
 
-def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3):
-  if onto.world.graph.has_thread_parallelism:
+def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3, sleep = None, nb_queries_before_sleep = 50):
+  if onto.world.graph.has_thread_parallelism and nb_thread:
     if onto.world.graph.has_changes():
       raise RuntimeError("Cannot execute parallelized queries on uncommited database. Please call World.save() before.")
     
@@ -52,6 +52,14 @@ def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3):
       return [q.execute(params, raw) for raw, q, params in zip(raws, prepared_queries, paramss)]
     
   else:
+    raws = [None] * len(prepared_queries)
+    for i in range(len(prepared_queries)):
+      raws[i] = prepared_queries[i].execute_raw(paramss[i]).fetchall()
+      if sleep and (i + 1) % nb_queries_before_sleep == 0: sleep()
+      
     with onto:
-      return [q.execute(params) for q, params in zip(prepared_queries, paramss)]
-
+      r = [q.execute(params, raw) for raw, q, params in zip(raws, prepared_queries, paramss)]
+      
+    #with onto:
+    #  return [q.execute(params) for q, params in zip(prepared_queries, paramss)]
+      

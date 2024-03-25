@@ -518,18 +518,27 @@ class PreparedModifyQuery(PreparedQuery):
       for insert in self.inserts:
         triple = []
         for type, value in insert:
-          if   type == "vars":          triple.append(results[value])
+          if   type == "vars":
+            val = results[value]
+            if isinstance(val, str) and (self.column_types[value] == "objs") and val.startswith("NEWINSTANCEIRI"):
+              Class = self.world._get_by_storid(int(val[15:-1]))
+              namespace = (owlready2.CURRENT_NAMESPACES.get() and owlready2.CURRENT_NAMESPACES.get()[-1]) or Class.namespace
+              iri = self.world.graph._new_numbered_iri("%s%s" % (namespace.base_iri, Class.name.lower()))
+              if isinstance(results, tuple): results = list(results)
+              storid = val = results[value] = self.world._abbreviate(iri)
+              added_triples.append([None, storid, rdf_type, owl_named_individual])
+              added_triples.append([None, storid, rdf_type, Class.storid])
+            triple.append(val)
           elif type == "bn":            triple.append(bns.get(value) or bns.setdefault(value, self.world.new_blank_node()))
           elif type == "param":         triple.append(self.world._to_rdf(params[value])[0])
           elif type == "paramdatatype": triple.append(self.world._to_rdf(params[value])[1])
           else:                         triple.append(value)
-        #print("ADD", insert, triple)
         added_triples.append(triple)
         
     if added_triples: self.world._add_quads_with_update(self.ontology, added_triples)
     return nb_match
   
-    
+
 class Column(object):
   def __init__(self, var, type, binding, name, index):
     self.var         = var

@@ -228,3 +228,10 @@ def update_graph(graph, version):
     graph.execute("""UPDATE store SET version=11""")
     graph.db.commit()
     version += 1
+    
+  if version == 11:
+    print("* Owlready2 * Converting quadstore to internal format 12...", file = sys.stderr)
+    graph.execute("""UPDATE store SET current_resource=(SELECT MAX(storid) FROM resources)""")
+    graph.execute("""UPDATE store SET version=12""")
+    graph.db.commit()
+    version += 1

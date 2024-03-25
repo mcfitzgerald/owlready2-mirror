@@ -768,10 +768,11 @@ version 2 - 0.46
 * Remove warning when Cython module is not available
 * Update import OMOP CDM for their new CSV format
 * Basic support for enumerated datatypes (= defined with an equivalent_to and a OneOf)
+* Improved synchronization and multiprocessor support
 * Bugfixes:
   * Fix IRI() return type in SPARQL
   * Fix SPARQL queries with two UNIONs when there is no shared variables between the unions members
-
+  * Avoid reusing ID of destroyed entity (storid; reuse is problematic when sharing the quadstore with other processes)
 
 Links
 -----

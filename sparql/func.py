@@ -218,19 +218,21 @@ class _Func(object):
       if not bn: bn = self.bns[x] = self.world.new_blank_node()
     return bn
   
-  def _newinstanceiri(self, x):
-    Class = self.world._get_by_storid(x)
-    namespace = (owlready2.CURRENT_NAMESPACES.get() and owlready2.CURRENT_NAMESPACES.get()[-1]) or Class.namespace
-    iri = self.world.graph._new_numbered_iri("%s%s" % (namespace.base_iri, Class.name.lower()))
-    storid = self.world._abbreviate(iri)
-    namespace.ontology._add_obj_triple_spo(storid, rdf_type, owl_named_individual)
-    namespace.ontology._add_obj_triple_spo(storid, rdf_type, x)
-    return storid
+  # def _newinstanceiri(self, x):
+  #   Class = self.world._get_by_storid(x)
+  #   namespace = (owlready2.CURRENT_NAMESPACES.get() and owlready2.CURRENT_NAMESPACES.get()[-1]) or Class.namespace
+  #   iri = self.world.graph._new_numbered_iri("%s%s" % (namespace.base_iri, Class.name.lower()))
+  #   storid = self.world._abbreviate(iri)
+  #   namespace.ontology._add_obj_triple_spo(storid, rdf_type, owl_named_individual)
+  #   namespace.ontology._add_obj_triple_spo(storid, rdf_type, x)
+  #   return storid
   
+  def _newinstanceiri(self, x): return "NEWINSTANCEIRI(%s)" % x
+    
   def _loaded(self, x):
     return x in self.world._entities
-  
 
+  
 def register_python_builtin_functions(world):
   if (sys.version_info.major == 3) and (sys.version_info.minor < 8):
     def create_function(name, num_params, func, deterministic = False):

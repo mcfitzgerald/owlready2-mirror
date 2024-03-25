@@ -414,6 +414,13 @@ class World(_GraphManager):
     self._destroy_cached_entities()
     self.graph.close()
     
+  def __enter__(self):
+    if self.graph: self.graph.acquire_write_lock()
+    return self
+  
+  def __exit__(self, exc_type = None, exc_val = None, exc_tb = None):
+    if self.graph: self.graph.release_write_lock()
+    
   def _destroy_cached_entities(self):
     _entities = self._entities
     _fusion_classes = set(self._fusion_class_cache.values())

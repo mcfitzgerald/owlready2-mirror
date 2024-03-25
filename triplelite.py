@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, os.path, sqlite3, time, re, multiprocessing
+import sys, os, os.path, sqlite3, time, re
 from collections import defaultdict
 from itertools import chain
 
@@ -62,7 +62,7 @@ class _ConnexionPool(object):
 
 class Graph(BaseMainGraph):
   _SUPPORT_CLONING = True
-  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None):
+  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None, extra_lock = None):
     exists        = os.path.exists(filename) and os.path.getsize(filename) # BEFORE creating db!
     initialize_db = (clone is None) and ((filename == ":memory:") or (not exists))
     
@@ -99,6 +99,7 @@ class Graph(BaseMainGraph):
     #     self.db = sqlite3.connect("file:%s?cache=shared%s" % (filename, extra_options), check_same_thread = False, uri = True)
     #     self.db.execute("""PRAGMA locking_mode = NORMAL""")
     
+    self.filename = filename
     options = []
     if filename == ":memory:":
       filename = str(id(self))
@@ -126,7 +127,7 @@ class Graph(BaseMainGraph):
       except: pass # Deprecated PRAGMA
     else:
       self.db.execute("""PRAGMA temp_store = memory""")
-
+      
     if profiling:
       import time
       from collections import Counter
@@ -182,11 +183,16 @@ class Graph(BaseMainGraph):
     self.c                 = None
     self.nb_added_triples  = 0
     
-    if lock:
+    if   lock:
       self.lock = lock
       self.acquire_write_lock = self._acquire_write_lock_with_lock
       self.release_write_lock = self._release_write_lock_with_lock
+    elif extra_lock:
+      self.lock = extra_lock
+      self.acquire_write_lock = self._acquire_write_lock_with_extra_lock
+      self.release_write_lock = self._release_write_lock_with_extra_lock
     elif read_only:
+      import multiprocessing
       self.lock = multiprocessing.RLock()
       self.acquire_write_lock = self._acquire_write_lock_with_lock
       self.release_write_lock = self._release_write_lock_with_lock
@@ -197,7 +203,7 @@ class Graph(BaseMainGraph):
       self.prop_fts = set()
       
       self.execute("""CREATE TABLE store (version INTEGER, current_blank INTEGER, current_resource INTEGER)""")
-      self.execute("""INSERT INTO store VALUES (11, 0, 300)""")
+      self.execute("""INSERT INTO store VALUES (12, 0, 300)""")
       self.execute("""CREATE TABLE objs (c INTEGER, s INTEGER, p INTEGER, o INTEGER)""")
       self.execute("""CREATE TABLE datas (c INTEGER, s INTEGER, p INTEGER, o BLOB, d INTEGER)""")
       self.execute("""CREATE VIEW quads AS SELECT c,s,p,o,NULL AS d FROM objs UNION ALL SELECT c,s,p,o,d FROM datas""")
@@ -212,7 +218,7 @@ class Graph(BaseMainGraph):
         self.execute("""CREATE TABLE resources (storid INTEGER PRIMARY KEY, iri TEXT)""")
       self.db.executemany("INSERT INTO resources VALUES (?,?)", _universal_abbrev_2_iri.items())
       self.execute("""CREATE UNIQUE INDEX index_resources_iri ON resources(iri)""")
-
+      
       self.execute("""CREATE INDEX index_objs_sp ON objs(s,p)""")
       self.execute("""CREATE UNIQUE INDEX index_objs_op ON objs(o,p,c,s)""") # c is for onto.classes(), etc
       self.execute("""CREATE INDEX index_objs_c ON objs(c)""")
@@ -232,10 +238,11 @@ class Graph(BaseMainGraph):
       self.indexed = True
       if clone:
         s = "\n".join(clone.db.iterdump())
+        open("/tmp/t", "w").write(s)
         self.db.cursor().executescript(s)
         
       version = self.execute("SELECT version FROM store").fetchone()[0]
-      if version < 11:
+      if version < 12:
         from owlready2.triplelite_update import update_graph
         update_graph(self, version)      
         
@@ -254,6 +261,15 @@ class Graph(BaseMainGraph):
   #  with self.connexion_pool.get() as db:
   #    return self._get_gevent_hub().threadpool.apply(db.execute, (sql, args))
   
+  def get_wal_mode(self):
+    mode = list(self.execute("PRAGMA journal_mode"))[0][0]
+    if mode == "delete": return False
+    return mode
+  
+  def set_wal_mode(self, mode):
+    if mode == True: mode = "wal"
+    self.execute("PRAGMA journal_mode=%s" % mode)
+    
   def analyze(self):
     self.nb_added_triples = 0
     
@@ -317,6 +333,13 @@ class Graph(BaseMainGraph):
   def _release_write_lock_with_lock(self):
     self.lock.release()
     self.lock_level -= 1
+  def _acquire_write_lock_with_extra_lock(self):
+    self.lock.acquire()
+    if not self.db.in_transaction: self.execute("BEGIN IMMEDIATE")
+    self.lock_level += 1
+  def _release_write_lock_with_extra_lock(self):
+    self.lock.release()
+    self.lock_level -= 1
   def has_write_lock(self): return self.lock_level
   
   def select_abbreviate_method(self):
@@ -358,7 +381,9 @@ class Graph(BaseMainGraph):
     r = self.execute("SELECT storid FROM resources WHERE iri=? LIMIT 1", (iri,)).fetchone()
     if r: return r[0]
     if create_if_missing:
-      storid = max(self.execute("SELECT MAX(storid)+1 FROM resources").fetchone()[0], 301) # First 300 values are reserved
+      #storid = max(self.execute("SELECT MAX(storid)+1 FROM resources").fetchone()[0], 301) # First 300 values are reserved
+      storid = self.execute("UPDATE store SET current_resource=current_resource+1").execute("SELECT current_resource FROM store").fetchone()[0]
+      
       self.execute("INSERT INTO resources VALUES (?,?)", (storid, iri))
       return storid
     
@@ -409,7 +434,7 @@ class Graph(BaseMainGraph):
   def has_changes(self): return self.current_changes != self.db.total_changes
 
   def commit(self):
-    if self.current_changes != self.db.total_changes:
+    if (self.current_changes != self.db.total_changes) or self.db.in_transaction:
       self.current_changes = self.db.total_changes
       self.db.commit()
       
@@ -421,8 +446,9 @@ class Graph(BaseMainGraph):
     return user_c
   
   def new_blank_node(self):
-    blank = self.execute("SELECT current_blank+1 FROM store").fetchone()[0]
-    self.execute("UPDATE store SET current_blank=?", (blank,))
+    #blank = self.execute("SELECT current_blank+1 FROM store").fetchone()[0]
+    #self.execute("UPDATE store SET current_blank=?", (blank,))
+    blank = self.execute("UPDATE store SET current_blank=current_blank+1").execute("SELECT current_blank FROM store").fetchone()[0]
     return -blank
     
   def _get_obj_triples_spo_spo(self, s, p, o):
@@ -880,14 +906,16 @@ class SubGraph(BaseSubGraph):
   def import_triples_from_queue(self, queue, filename = None, delete_existing_triples = True):
     cur = self.db.cursor()
     new_abbrevs = []
-    
+
+    if not self.db.in_transaction: cur.execute("BEGIN")
     if delete_existing_triples:
       cur.execute("DELETE FROM objs WHERE c=?",  (self.c,))
       cur.execute("DELETE FROM datas WHERE c=?", (self.c,))
       
     # Re-implement _abbreviate() for speed and blank node support
     abbrevs = { "" : 60 }
-    current_resource = max(self.execute("SELECT MAX(storid) FROM resources").fetchone()[0], 300) # First 300 values are reserved
+    #current_resource = max(self.execute("SELECT MAX(storid) FROM resources").fetchone()[0], 300) # First 300 values are reserved
+    current_resource = self.execute("SELECT current_resource FROM store").fetchone()[0]
     def _abbreviate(iri):
         nonlocal current_resource
         storid = abbrevs.get(iri)
@@ -934,6 +962,8 @@ class SubGraph(BaseSubGraph):
       else:
         cur.execute("UPDATE ontologies SET last_update=? WHERE c=?", (date, self.c,))
         
+      cur.execute("UPDATE store SET current_resource=?", (current_resource,))
+      
       self.parent.select_abbreviate_method()
       self.parent.analyze()
       return onto_base_iri
@@ -962,13 +992,15 @@ class SubGraph(BaseSubGraph):
     
     cur = self.db.cursor()
     
+    if not self.db.in_transaction: cur.execute("BEGIN")
     if delete_existing_triples:
       cur.execute("DELETE FROM objs WHERE c=?", (self.c,))
       cur.execute("DELETE FROM datas WHERE c=?", (self.c,))
       
     # Re-implement _abbreviate() for speed
     abbrevs = {}
-    current_resource = max(self.execute("SELECT MAX(storid) FROM resources").fetchone()[0], 300) # First 300 values are reserved
+    #current_resource = max(self.execute("SELECT MAX(storid) FROM resources").fetchone()[0], 300) # First 300 values are reserved
+    current_resource = self.execute("SELECT current_resource FROM store").fetchone()[0]
     def _abbreviate(iri):
         nonlocal current_resource
         storid = abbrevs.get(iri)
@@ -1030,6 +1062,8 @@ class SubGraph(BaseSubGraph):
       else:
         cur.execute("UPDATE ontologies SET last_update=? WHERE c=?", (date, self.c,))
         
+      cur.execute("UPDATE store SET current_resource=?", (current_resource,))
+      
       self.parent.select_abbreviate_method()
       self.parent.analyze()
       

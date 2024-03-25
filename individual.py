@@ -406,6 +406,11 @@ class Thing(metaclass = ThingClass):
         subject = self.namespace.world._get_by_storid(s)
         yield subject, Prop
         
+  def reload(self):
+    for attr in tuple(self.__dict__):
+      if (attr in SPECIAL_ATTRS) or (not attr in self.namespace.world._props): continue
+      delattr(self, attr)
+      
 
 
 class Nothing(Thing): pass
