@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, xml, xml.parsers.expat
+import sys, os.path, xml, xml.parsers.expat
 #from urllib.parse import urljoin
 from collections import defaultdict
 
@@ -35,6 +35,9 @@ cdef str urljoin(str base, str name): # Reimplement because urllib.parse.urljoin
   if name.startswith("/"):
     protocol, empty, server, rest = base.split("/", 3)
     return "%s//%s%s" % (protocol, server, name)
+  while name.startswith("."):
+    if   name.startswith( "./"): name = name[2:]
+    elif name.startswith("../"): name = name[3:]; base = os.path.dirname(base[:-1] if base.endswith("/") else base)
   if base.endswith("/"): return "%s%s" % (base, name)
   return "%s/%s" % (base, name)
 

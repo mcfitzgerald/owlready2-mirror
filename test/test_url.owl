@@ -20,5 +20,11 @@
   <rdfs:subClassOf rdf:resource="./O2"/>
 </owl:Class>
 
+<owl:Class rdf:about="O4?">
+</owl:Class>
+
+<owl:Class rdf:about="../O5">
+</owl:Class>
+
 
 </rdf:RDF>

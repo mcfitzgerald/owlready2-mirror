@@ -5734,6 +5734,8 @@ multiple lines with " and ’ and \ and & and < and > and é.""", "en")
     assert o.O
     assert o.O2
     assert o.O3
+    assert o["O4?"]
+    assert world["http://www.test.org/O5"]
     assert issubclass(o.O2, o.O)
     assert issubclass(o.O3, o.O2)
     assert set(o.search(subclass_of = o.O)) == { o.O, o.O2, o.O3 }
