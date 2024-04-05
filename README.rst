@@ -772,6 +772,7 @@ version 2 - 0.46
 * Bugfixes:
   * Fix IRI() return type in SPARQL
   * Fix SPARQL queries with two UNIONs when there is no shared variables between the unions members
+  * Fix parsing ontology with IRI ending by '?'
   * Avoid reusing ID of destroyed entity (storid; reuse is problematic when sharing the quadstore with other processes)
 
 Links

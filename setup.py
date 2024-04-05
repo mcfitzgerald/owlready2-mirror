@@ -59,10 +59,10 @@ try:
   ]
   extensions = Cython.Build.cythonize(extensions, compiler_directives = { "language_level" : 3 })
   dist = do_setup(extensions)
-  
 except:
   dist = do_setup([])
 
+  
 
 if len(sys.argv) >= 2 and sys.argv[1] == "develop":
     # `python setup.py develop` (and `pip install -e .`) assumes a directory structure

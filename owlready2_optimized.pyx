@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys, xml, xml.parsers.expat
-from urllib.parse import urljoin
+#from urllib.parse import urljoin
 from collections import defaultdict
 
 from owlready2.base import OwlReadyOntologyParsingError
@@ -26,6 +26,17 @@ from owlready2.base import OwlReadyOntologyParsingError
 INT_DATATYPES   = { "http://www.w3.org/2001/XMLSchema#integer", "http://www.w3.org/2001/XMLSchema#byte", "http://www.w3.org/2001/XMLSchema#short", "http://www.w3.org/2001/XMLSchema#int", "http://www.w3.org/2001/XMLSchema#long", "http://www.w3.org/2001/XMLSchema#unsignedByte", "http://www.w3.org/2001/XMLSchema#unsignedShort", "http://www.w3.org/2001/XMLSchema#unsignedInt", "http://www.w3.org/2001/XMLSchema#unsignedLong", "http://www.w3.org/2001/XMLSchema#negativeInteger", "http://www.w3.org/2001/XMLSchema#nonNegativeInteger", "http://www.w3.org/2001/XMLSchema#positiveInteger" }
 FLOAT_DATATYPES = { "http://www.w3.org/2001/XMLSchema#decimal", "http://www.w3.org/2001/XMLSchema#double", "http://www.w3.org/2001/XMLSchema#float", "http://www.w3.org/2002/07/owl#real" }
 
+cdef str urljoin(str base, str name): # Reimplement because urllib.parse.urljoin remove trailing ?
+  cdef str protocol
+  cdef str empty
+  cdef str server
+  cdef str rest
+  if name.startswith(("http://", "https://")): return name
+  if name.startswith("/"):
+    protocol, empty, server, rest = base.split("/", 3)
+    return "%s//%s%s" % (protocol, server, name)
+  if base.endswith("/"): return "%s%s" % (base, name)
+  return "%s/%s" % (base, name)
 
 def parse_ntriples(object f, object queue, str default_base, int batch_size):
   import re

@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, xml, xml.parsers.expat, urllib.parse
+import sys, xml, xml.parsers.expat
+#from urllib.parse import urljoin
 from collections import defaultdict
 
 try:
@@ -36,6 +37,14 @@ def is_bn(x):
 def is_fake_bn(x):
   if isinstance(x, str): return x.startswith("_ ")
   return False
+
+def urljoin(base, name): # Reimplement because urllib.parse.urljoin remove trailing ?
+  if name.startswith(("http://", "https://")): return name
+  if name.startswith("/"):
+    protocol, empty, server, rest = base.split("/", 3)
+    return "%s//%s%s" % (protocol, server, name)
+  if base.endswith("/"): return "%s%s" % (base, name)
+  return "%s/%s" % (base, name)
 
 def parse(f, on_prepare_obj = None, on_prepare_data = None, new_blank = None, default_base = ""):
   parser = xml.parsers.expat.ParserCreate(None, "")
@@ -172,7 +181,7 @@ def parse(f, on_prepare_obj = None, on_prepare_data = None, new_blank = None, de
           if   iri.startswith("#"): iri = xml_base + iri
           elif iri.startswith("/"): iri = xml_dir  + iri[1:]
           elif not iri:             iri = xml_base
-          elif not ":" in iri:      iri = urllib.parse.urljoin(xml_dir, iri)
+          elif not ":" in iri:      iri = urljoin(xml_dir, iri)
           if iri.endswith("/"): iri = iri[:-1]
           stack.append(["Resource", iri])
           
@@ -210,7 +219,7 @@ def parse(f, on_prepare_obj = None, on_prepare_data = None, new_blank = None, de
         if   iri.startswith("#"): iri = xml_base + iri
         elif iri.startswith("/"): iri = xml_dir  + iri[1:]
         elif not iri:             iri = xml_base
-        elif not ":" in iri:      iri = urllib.parse.urljoin(xml_dir, iri)
+        elif not ":" in iri:      iri = urljoin(xml_dir, iri)
           
       if tag != "http://www.w3.org/1999/02/22-rdf-syntax-ns#Description":
         if not is_fake_bn(iri):
