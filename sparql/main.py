@@ -635,14 +635,14 @@ class SQLQuery(FuncSupport):
       if self.distinct: sql += "DISTINCT "
       
       sql += """%s FROM """ % (", ".join(str(column.binding) for column in self.columns))
-      
       table_2_preceding = {}
       for table in self.tables:
         preceding = self._find_join_preceding_table(table)
         if preceding: table_2_preceding[table] = preceding
         
       if table_2_preceding:
-        tables = list(self.tables)
+        #tables = list(self.tables)
+        tables = [table for table in self.tables if table.join == ","] + [table for table in self.tables if table.join != ","]
         for table, preceding in table_2_preceding.items():
           table_i     = tables.index(table)
           preceding_i = tables.index(preceding)
@@ -768,12 +768,12 @@ class SQLQuery(FuncSupport):
     if self.triples: raise ValueError("Cannot parse triples twice!")
     self.block = triples
     self.triples.extend(triples)
-    
+        
     if self.raw_selects is None: raise ValueError("Need to call parse_selects() before finalizing triples!")
     
     if self.raw_selects == "*":
       self.vars_needed_for_select = { self.parse_var(var_name) for var_name in self.block.get_ordered_vars() }         
-
+      
     for i, triple in enumerate(self.triples): # Pass 0: Simple union blocks
       if isinstance(triple, UnionBlock) and triple.simple_union_triples:
         self.triples[i:i+1] = triple.simple_union_triples
@@ -782,9 +782,14 @@ class SQLQuery(FuncSupport):
     
     for triple in list(self.triples): # Pass 1: Determine var type and prop type
       if isinstance(triple, (Bind, Filter, Block)): continue
+      
       triple.local_table_type = triple.table_type
       
-      if triple.optional: continue # Optional => cannot be used to restrict variable type
+      if triple.optional:
+        self.triples.remove(triple)
+        self.triples.append(triple)
+        continue # Optional => cannot be used to restrict variable type
+      
       s, p, o = triple
       if s.name == "VAR":
         var = self.parse_var(s)
@@ -963,6 +968,7 @@ class SQLQuery(FuncSupport):
       if self.name == "main": select_name = ""
       else:                   select_name = "%s_" % (self.name or "")
       table = Table(self, "%sq%s" % (select_name, self.translator.next_table_id), triple.local_table_type)
+      
       if triple.optional:
         table.join = "LEFT JOIN"
         conditions = table.join_conditions
@@ -1174,7 +1180,6 @@ class SQLQuery(FuncSupport):
 
     if self.preliminary:
       self.translator.table_type_2_cols[self.name] = [column.name for column in self.columns]
-
     
   def set_column_names(self, names):
     for column, name in zip(self.columns, names): column.name = name
@@ -1202,6 +1207,17 @@ class SQLQuery(FuncSupport):
         if binding.startswith("static"): # no 'd' for static yet
           return binding, type, 0, type
         else:
+          table = self.name_2_table.get(binding.split(".")[0])
+          if table.type == "objs": # Problem! Can be caused by optional triples, since they cannot force table type => try to fix it
+            for binding2 in x.bindings: # Try to find a better binding
+              if binding2 is binding: continue
+              table2 = self.name_2_table.get(binding2.split(".")[0])
+              if table2 and table2.type != "objs":
+                binding = binding2
+                break
+            else: # No better binding, force objs type
+              return binding, "objs", None, None
+             
           return binding, type, "%sd" % binding[:-1], type
     elif x.name == "IRI":   return x.storid, "objs", None, None
     elif x.name == "PARAM": return "?%s" % x.number, "objs", None, None # XXX data parameter
@@ -1313,7 +1329,7 @@ class SQLRecursivePreliminaryQuery(SQLQuery):
     self.parse_triples(prelim_triples)
     self.finalize_columns()
     self.set_column_names(column_names)
-
+    
     extra_cols = self.columns[len(column_names):]
     
     p_direct_conditions   = []

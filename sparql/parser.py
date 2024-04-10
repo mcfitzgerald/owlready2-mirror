@@ -460,7 +460,9 @@ def f(p):
   return UnionBlock(p[0])
 @pg.production("group_graph_pattern_item : OPTIONAL group_graph_pattern")
 def f(p):
-  p = list(p[1])
+  p = p[1]
+  if isinstance(p, SimpleTripleBlock): p = list(p)
+  else:                                p = [p]
   if (len(p) == 1) and isinstance(p[0], Triple):
     p[0].optional = True
     return p

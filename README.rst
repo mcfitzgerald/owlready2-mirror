@@ -775,6 +775,14 @@ version 2 - 0.46
   * Fix parsing ontology with IRI ending by '?'
   * Avoid reusing ID of destroyed entity (storid; reuse is problematic when sharing the quadstore with other processes)
 
+version 2 - 0.47
+****************
+
+* Bugfixes:
+  * Fix OPTIONAL blocks in SPARQL queries that share variable outside the OPTIONAL block
+  * Fix prop1[prop2 in OPTIONAL blocks in SPARQL queries
+
+
 Links
 -----
 

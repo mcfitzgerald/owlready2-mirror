@@ -8755,7 +8755,6 @@ class TestSPARQL(BaseTest, unittest.TestCase):
         print("OWLREADY:", r)
         print("RDFLIB:  ", r2)
         assert False
-        
     return q, r
   
   def sparql_rdflib(self, world, sparql):
@@ -9546,12 +9545,15 @@ class TestSPARQL(BaseTest, unittest.TestCase):
     
   def test_85(self):
     world, onto = self.prepare1()
-    q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY ?l""")
-    assert r == [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, locstr('label_a', "en")], [onto.b1, locstr('label_b', "en")], [onto.b2, locstr('label_b', "en")], [onto.b3, locstr('label_b', "fr")], [onto.price, 'price'], [onto.rel, 'rel']]
-    q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY DESC(?l)""")
-    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b3, locstr('label_b', "fr")], [onto.b2, locstr('label_b', "en")], [onto.b1, locstr('label_b', "en")], [onto.a1, locstr('label_a', "en")], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
     q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY DESC(?l) ?x""")
     assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b1, locstr('label_b', "en")], [onto.b2, locstr('label_b', "en")], [onto.b3, locstr('label_b', "fr")], [onto.a1, locstr('label_a', "en")], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
+    onto.b1.label = [locstr("label_b1", "en")]
+    onto.b2.label = [locstr("label_b2", "en")]
+    onto.b3.label = [locstr("label_b3", "fr")]
+    q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY ?l""")
+    assert r == [[onto.A, 'Classe A'], [onto.A1, 'Classe A1'], [onto.a1, locstr('label_a', "en")], [onto.b1, locstr('label_b1', "en")], [onto.b2, locstr('label_b2', "en")], [onto.b3, locstr('label_b3', "fr")], [onto.price, 'price'], [onto.rel, 'rel']]
+    q, r = self.sparql(world, """SELECT  ?x ?l { ?x rdfs:label ?l . } ORDER BY DESC(?l)""")
+    assert r == [[onto.rel, 'rel'], [onto.price, 'price'], [onto.b3, locstr('label_b3', "fr")], [onto.b2, locstr('label_b2', "en")], [onto.b1, locstr('label_b1', "en")], [onto.a1, locstr('label_a', "en")], [onto.A1, 'Classe A1'], [onto.A, 'Classe A']]
     
   def test_86(self):
     world, onto = self.prepare1()
@@ -10902,11 +10904,90 @@ SELECT (1 AS ?r) WHERE {
     
     q, r = self.sparql(world, sparql, [c4], compare_with_rdflib = False)
     assert r == [[1]]
-    
-    
+        
+  def test_171(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class Patient(Thing): pass
+      class Doctor(Thing): pass
+      class has_patient(Doctor >> Patient): pass
+      p1 = Patient()
+      p2 = Patient()
+      p3 = Patient()
+      d1 = Doctor(has_patient = [p1])
+      d2 = Doctor(has_patient = [p1, p2])
+      d3 = Doctor()
       
-# Add test for Pellet
+    sparql = """
+SELECT ?doctor (COUNT(?patient) AS ?nb) {
+  ?doctor a onto:Doctor .
+  OPTIONAL { ?doctor onto:has_patient ?patient . }
+} GROUP BY ?doctor"""
+    q, r = self.sparql(world, sparql)
+    assert { tuple(x) for x in r } == { (d1, 1), (d2, 2), (d3, 0) }
 
+  def test_172(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class Patient(Thing): pass
+      class Doctor(Thing): pass
+      class has_doctor(Patient >> Doctor): pass
+      d1 = Doctor()
+      d2 = Doctor()
+      d3 = Doctor()
+      p1 = Patient(has_doctor = [d1])
+      p2 = Patient(has_doctor = [d1, d2])
+      p3 = Patient(has_doctor = [])
+      
+    sparql = """
+SELECT ?doctor (COUNT(?patient) AS ?nb) {
+  ?doctor a onto:Doctor .
+  OPTIONAL { ?patient onto:has_doctor ?doctor . }
+} GROUP BY ?doctor"""
+    q, r = self.sparql(world, sparql)
+    assert { tuple(x) for x in r } == { (d1, 2), (d2, 1), (d3, 0) }
+    
+    sparql = """
+SELECT ?doctor ?patient {
+  ?doctor a onto:Doctor .
+  ?patient a onto:Patient .
+  OPTIONAL { ?patient onto:has_doctor ?doctor . }
+ }"""
+    q, r = self.sparql(world, sparql)
+
+  def test_173(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class Patient(Thing): pass
+      class Doctor(Thing): pass
+      class Pharmacist(Thing): pass
+      class has_doctor(Patient >> Doctor): pass
+      class has_pharmacist(Patient >> Pharmacist): pass
+      d1 = Doctor()
+      d2 = Doctor()
+      h1 = Pharmacist()
+      h2 = Pharmacist()
+      p1 = Patient(has_doctor = [d1], has_pharmacist = [h1, h2])
+      p2 = Patient(has_doctor = [d1, d2], has_pharmacist = [h2])
+      
+    sparql = """
+SELECT ?clinician (COUNT(?patient) AS ?nb) {
+  ?clinician a owl:NamedIndividual .
+  { ?clinician a onto:Doctor . }
+    UNION
+  { ?clinician a onto:Pharmacist . }
+  OPTIONAL { ?patient onto:has_doctor|onto:has_pharmacist ?clinician . }
+} GROUP BY ?clinician"""
+    q, r = self.sparql(world, sparql)
+       
+    assert { tuple(x) for x in r } == { (d1, 2), (d2, 1), (h1, 1), (h2, 2) }
+    
+
+    
+# Add test for Pellet
 for Class in [Test, Paper]:
   if Class:
     for name, func in list(Class.__dict__.items()):
