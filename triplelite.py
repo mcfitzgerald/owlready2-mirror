@@ -62,7 +62,7 @@ class _ConnexionPool(object):
 
 class Graph(BaseMainGraph):
   _SUPPORT_CLONING = True
-  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None, extra_lock = None):
+  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None, extra_lock = None, connection = None):
     exists        = os.path.exists(filename) and os.path.getsize(filename) # BEFORE creating db!
     initialize_db = (clone is None) and ((filename == ":memory:") or (not exists))
     
@@ -70,34 +70,6 @@ class Graph(BaseMainGraph):
       if exists: raise ValueError("Cannot save existent quadstore in '%s': File already exists! Use a new filename for saving quadstore or, for opening an already existent quadstore, do not create any triple before calling set_backend() (including creating an empty ontology or loading a module that does so)." % filename)
       
     if sqlite_tmp_dir: os.environ["SQLITE_TMPDIR"] = sqlite_tmp_dir
-    
-    # if filename == ":memory:":
-    #   filename = str(id(self))
-    #   extra_options = "&mode=memory"
-    # else:
-    #   extra_options = ""
-      
-    # self.read_only = read_only
-    # if read_only:
-    #   if exclusive:
-    #     #self.db = sqlite3.connect("file:%s?mode=ro" % filename, isolation_level = "EXCLUSIVE", check_same_thread = False, uri = True)
-    #     self.db = sqlite3.connect("file:%s?mode=ro&cache=shared%s" % (filename, extra_options), isolation_level = "EXCLUSIVE", check_same_thread = False, uri = True)
-    #     self.db.execute("""PRAGMA locking_mode = EXCLUSIVE""")
-    #     #self.db.execute("""PRAGMA query_only = 1""") # No, because we may need to create TEMP tables (SPARQL module does that)
-    #     self.db.execute("""PRAGMA read_uncommitted = True""") # Exclusive + no write => no need for read lock
-    #   else:
-    #     self.db = sqlite3.connect("file:%s?mode=ro&cache=shared%s" % (filename, extra_options), check_same_thread = False, uri = True)
-    #     self.db.execute("""PRAGMA locking_mode = NORMAL""")
-    #     #self.db.execute("""PRAGMA query_only = 1""") # No, because we may need to create TEMP tables (SPARQL module does that)
-    # else:
-    #   if exclusive:
-    #     #self.db = sqlite3.connect(filename, isolation_level = "EXCLUSIVE", check_same_thread = False)
-    #     self.db = sqlite3.connect("file:%s?cache=shared%s" % (filename, extra_options), isolation_level = "EXCLUSIVE", check_same_thread = False, uri = True)
-    #     self.db.execute("""PRAGMA locking_mode = EXCLUSIVE""")
-    #   else:
-    #     #self.db = sqlite3.connect(filename, check_same_thread = False)
-    #     self.db = sqlite3.connect("file:%s?cache=shared%s" % (filename, extra_options), check_same_thread = False, uri = True)
-    #     self.db.execute("""PRAGMA locking_mode = NORMAL""")
     
     self.filename = filename
     options = []
@@ -111,9 +83,10 @@ class Graph(BaseMainGraph):
     
     uri = "file:%s" % filename
     if options: uri = "%s?%s" % (uri, "&".join(options))
-    
-    self.db = sqlite3.connect(uri, isolation_level = "EXCLUSIVE" if exclusive else "DEFERRED", check_same_thread = False, uri = True)
-    
+
+    self.db = connection or sqlite3.connect(uri, isolation_level = "EXCLUSIVE" if exclusive else "DEFERRED", check_same_thread = False, uri = True)
+
+    #print("XXX", filename, connection, read_only)
     if exclusive: self.db.execute("""PRAGMA locking_mode = EXCLUSIVE""")
     if exclusive and read_only: self.db.execute("""PRAGMA read_uncommitted = True""") # Exclusive + no write => no need for read lock
     #if read_only: self.db.execute("""PRAGMA query_only = 1""") # No, because we may need to create TEMP tables (SPARQL module does that)
@@ -251,12 +224,13 @@ class Graph(BaseMainGraph):
       self.analyze()
       
     # Unindexed table for deprioritizing SPARQL subqueries
+    self.execute("""DROP TABLE IF EXISTS one""")
     self.execute("""CREATE TEMP TABLE one (i INTEGER)""")
     self.execute("""INSERT INTO one VALUES (1)""")
     
     self.current_changes = self.db.total_changes
     self.select_abbreviate_method()
-    
+
   #def execute_long_with_gevent(self, sql, args = ()):
   #  with self.connexion_pool.get() as db:
   #    return self._get_gevent_hub().threadpool.apply(db.execute, (sql, args))
