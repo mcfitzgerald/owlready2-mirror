@@ -5890,7 +5890,7 @@ multiple lines with " and ’ and \ and & and < and > and é.""", "en")
     assert onto.enu2.equivalent_to[0].instances == ["Forcast", "Released"]
     
     onto.enu.equivalent_to.append(OneOf([1, 2]))
-
+    
     assert onto.enu .equivalent_to[0].instances == ["Forcast", "Release"]
     assert onto.enu .equivalent_to[1].instances == [1, 2]
     

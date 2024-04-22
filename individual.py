@@ -411,6 +411,7 @@ class Thing(metaclass = ThingClass):
       if (attr in SPECIAL_ATTRS) or (not attr in self.namespace.world._props): continue
       delattr(self, attr)
       
+type.__setattr__(Thing, "entity_class", Thing)
 
 
 class Nothing(Thing): pass

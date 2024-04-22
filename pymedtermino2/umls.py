@@ -278,7 +278,7 @@ def parse_mrsty(PYM, terminologies, langs, importer, f, remnant = ""):
     try:
       cui, tui, stn, sty, atui, cvf, _dropit = line.split("|")
     except: return line
-
+    
     sem = importer.semantic_types.get(tui)
     if sem is None:
       sem = importer._abbreviate("http://PYM/CUI/%s" % tui)

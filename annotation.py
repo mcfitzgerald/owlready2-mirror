@@ -163,6 +163,8 @@ class AnnotationPropertyClass(PropertyClass):
   
   _get_indirect_values_for_class = _get_indirect_values_for_individual
   
+AnnotationPropertyClass.entity_class = AnnotationPropertyClass
+
 
 class AnnotationProperty(Property, metaclass = AnnotationPropertyClass):
   namespace = owl

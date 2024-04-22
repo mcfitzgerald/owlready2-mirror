@@ -33,7 +33,7 @@ class _EquivalentToList(CallbackList):
     
   def _build_indirect(self):
     n = self._obj.namespace
-    self._indirect = list(set( n.ontology._to_python(o, main_type = self._obj.__class__)
+    self._indirect = list(set( n.ontology._to_python(o, main_type = getattr(self._obj, "entity_class", None))
                                for o in n.world._get_obj_triples_transitive_sym(self._obj.storid, self._obj._owl_equivalent)
                                if o != self._obj.storid ))
     
@@ -62,6 +62,7 @@ class _DisjointUnionList(CallbackList):
 
 class EntityClass(type):
   namespace = owlready
+  entity_class = None
   
   def get_name(Class): return Class._name
   def set_name(Class, name):
@@ -180,7 +181,7 @@ class EntityClass(type):
   def get_equivalent_to(Class):
     if Class._equivalent_to is None:
       Class._equivalent_to = _EquivalentToList(
-          [Class.namespace.world._to_python(o, main_type = Class.__class__, default_to_none = True)
+          [Class.namespace.world._to_python(o, main_type = Class.entity_class, default_to_none = True)
            for o in Class.namespace.world._get_obj_triples_sp_o(Class.storid, Class._owl_equivalent)
           ], Class, Class.__class__._class_equivalent_to_changed)
     return Class._equivalent_to
@@ -350,7 +351,7 @@ class EntityClass(type):
           descendant = world._entities.get(x)
           if descendant is None: continue
         else:
-          descendant = world._get_by_storid(x, None, Class.__class__, onto)
+          descendant = world._get_by_storid(x, None, Class.entity_class, onto)
         if (descendant is Class): continue
         if not descendant in s:
           s.add(descendant)
@@ -792,8 +793,9 @@ SELECT q1.s FROM objs q1 WHERE q1.p=6 AND (q1.o IN (SELECT s FROM prelim1_objs) 
           for v in new - old:
             Class.namespace.ontology._add_data_triple_spod(Class.storid, Prop.storid, *Class.namespace.ontology._to_rdf(v))
             
-            
-            
+ThingClass.entity_class = ThingClass
+
+
 class DatatypeClass(EntityClass):
   namespace = owlready
   

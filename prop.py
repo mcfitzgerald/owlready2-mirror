@@ -779,7 +779,9 @@ class ObjectPropertyClass(ReasoningPropertyClass):
       
   def _set_value_for_class (Prop, entity, value ): Prop._get_values_for_class(entity).reinit([value])
   
-  
+ObjectPropertyClass.entity_class = ObjectPropertyClass
+
+
 class ObjectProperty(Property, metaclass = ObjectPropertyClass):
   namespace = owl
 
@@ -877,6 +879,8 @@ class DataPropertyClass(ReasoningPropertyClass):
       entity.__dict__[Prop.python_name] = value
       
   def _set_value_for_class (Prop, entity, value ): Prop._get_values_for_class(entity).reinit([value])
+
+DataPropertyClass.entity_class = DataPropertyClass
 
 
 class DatatypeProperty(Property, metaclass = DataPropertyClass):
