@@ -352,7 +352,8 @@ def sync_reasoner_pellet(x = None, infer_property_values = False, infer_data_pro
     
   finally:
     if locked: world.graph.acquire_write_lock() # re-lock when applying results
-    
+
+
   _apply_reasoning_results(world, ontology, debug, new_parents, new_equivs, entity_2_type)
   if infer_property_values:      _apply_inferred_obj_relations (world, ontology, debug, inferred_obj_relations)
   if infer_data_property_values: _apply_inferred_data_relations(world, ontology, debug, inferred_data_relations)

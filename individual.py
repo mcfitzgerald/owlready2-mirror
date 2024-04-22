@@ -417,7 +417,6 @@ class Nothing(Thing): pass
 
 class NamedIndividual(Thing): pass
 
-
 class FusionClass(ThingClass):
   ontology = anonymous
   
@@ -428,9 +427,9 @@ class FusionClass(ThingClass):
     Classes0 = tuple(sorted(Classes0, key = lambda Class: Class.__name__))
     Class = Classes0[0].namespace.world._fusion_class_cache.get(Classes0)
     if Class: return Class
-    
-    Classes = _keep_most_specific(Classes0, consider_equivalence = True)
+
     try:
+      Classes = _keep_most_specific(Classes0, consider_equivalence = True) # May crash if one of the class has a one-of construct with an individual which belong to the sae fusion class!
       fusion_class = FusionClass._create_fusion_class(Classes0, Classes)
       
     except: # Too complex hierarchy => do not consider equivalent classes

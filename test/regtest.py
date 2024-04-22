@@ -1893,6 +1893,30 @@ class Test(BaseTest, unittest.TestCase):
     onto = world.get_ontology("http://dl-learner.org/benchmark/dataset/animals").load()
     assert set(onto.croco01.is_a) == { onto.Animal, onto.HasEggs }
     
+  def test_individual_29(self):
+    world = self.new_world()
+    onto = world.get_ontology("http://test.org/onto.owl")
+    
+    with onto:
+      class A(Thing): pass
+      class B(Thing): pass
+      
+      ab1 = A("ab1")
+      ab1.is_a.append(B)
+      
+      A.equivalent_to.append(OneOf([ab1]))
+      
+    filename = self.new_tmp_file()
+    onto.save(filename)
+    
+    world = self.new_world()
+    onto = world.get_ontology(filename).load()
+    
+    assert onto.A
+    assert onto.A.equivalent_to
+    assert onto.B
+    assert onto.ab1
+    
     
   def test_prop_1(self):
     n = get_ontology("http://www.semanticweb.org/jiba/ontologies/2017/0/test")

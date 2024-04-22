@@ -781,6 +781,7 @@ version 2 - 0.47
 * Bugfixes:
   * Fix OPTIONAL blocks in SPARQL queries that share variable outside the OPTIONAL block
   * Fix prop1[prop2 in OPTIONAL blocks in SPARQL queries
+  * Fix individuals belonging to several classes when one of these classes has a OneOf construct including that individual
 
 
 Links

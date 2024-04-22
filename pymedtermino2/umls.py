@@ -98,9 +98,10 @@ def parse_mrconso(PYM, terminologies, langs, importer, f, remnant = ""):
       importer.next_arbitrary_code += 1
     elif orig_code == "R40-F46.9": orig_code = "R40-R46.9" # Error in UMLS!
     elif orig_code == "R90-F94.9": orig_code = "R90-R94.9" # Error in UMLS!
-    
+
     if importer.extract_cui:
       cui               = importer._abbreviate("http://PYM/CUI/%s" % cui)
+        
     orig                = importer._abbreviate("http://PYM/%s/%s" % (terminology, orig_code))
     
     importer.aui_2_orig[aui] = orig
@@ -277,7 +278,7 @@ def parse_mrsty(PYM, terminologies, langs, importer, f, remnant = ""):
     try:
       cui, tui, stn, sty, atui, cvf, _dropit = line.split("|")
     except: return line
-    
+
     sem = importer.semantic_types.get(tui)
     if sem is None:
       sem = importer._abbreviate("http://PYM/CUI/%s" % tui)

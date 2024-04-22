@@ -243,8 +243,7 @@ WHERE q1.p=? AND q1.o=?
     for s in self._get_obj_triples_po_s(rdf_type, owl_named_individual):
       if not s < 0:
         i = self.world._get_by_storid(s)
-        if isinstance(i, Thing):
-          yield i
+        if isinstance(i, Thing): yield i
           
   def variables(self):
     for s in self._get_obj_triples_po_s(rdf_type, swrl_variable):
@@ -650,7 +649,6 @@ class World(_GraphManager):
     with LOADING:
       types       = []
       is_a_bnodes = []
-
       for graph, obj in self._get_obj_triples_sp_co(storid, rdf_type):
         if main_onto is None: main_onto = self.graph.context_2_user_context(graph)
         if   obj == owl_class:               main_type = ThingClass
