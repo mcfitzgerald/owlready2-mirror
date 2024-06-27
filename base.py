@@ -196,6 +196,14 @@ def _parse_duration(s):
 def _format_duration(td):
   return "P%sD%sS" % (td.days, td.seconds + td.microseconds / 1000000.0)
 
+def _parse_base64(s):
+  import base64
+  return base64.b64decode(s)
+
+def _format_base64(b):
+  import base64
+  return base64.b64encode(b).decode()
+
 def set_datatype_iri(datatype, iri):
   unparser = _universal_datatype_2_abbrev_unparser[datatype][1]
   _universal_datatype_2_abbrev         [datatype] =  _universal_iri_2_abbrev[iri]
@@ -312,6 +320,11 @@ _universal_abbrev_datatype(datetime.timedelta,
                            _parse_duration,
                            _format_duration,
                            "http://www.w3.org/2001/XMLSchema#duration")
+
+_universal_abbrev_datatype(bytes,
+                           _parse_base64,
+                           _format_base64,
+                           "http://www.w3.org/2001/XMLSchema#base64Binary")
 
 issubclass_python = issubclass
 

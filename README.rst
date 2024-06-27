@@ -778,6 +778,7 @@ version 2 - 0.46
 version 2 - 0.47
 ****************
 
+* Support binary data: Python bytes are now mapped to XML base64Binary.
 * Bugfixes:
   * Fix OPTIONAL blocks in SPARQL queries that share variable outside the OPTIONAL block
   * Fix prop1[prop2 in OPTIONAL blocks in SPARQL queries
