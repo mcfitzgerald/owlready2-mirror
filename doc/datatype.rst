@@ -3,6 +3,8 @@ Datatypes
 
 Owlready automatically recognizes and translates basic datatypes to Python, such as string, int, float, etc.
 
+Binary data, i.e. Python's bytes, are mapped to XML base64Binary, and thus they are base64-encoded in RDF / XML files.
+
 
 Creating enumerated datatypes
 -----------------------------
