@@ -84,6 +84,12 @@ class Namespace(object):
   
   def __getattr__(self, attr): return self.world["%s%s" % (self._base_iri, attr)]
   def __getitem__(self, name): return self.world["%s%s" % (self._base_iri, name)]
+  
+  def reset_numbered_iris(self, *Classes):
+    for Class in Classes:
+      prefix = "%s%s" % (self._base_iri, Class.name.lower())
+      self.world.graph.execute("""DELETE FROM last_numbered_iri WHERE prefix=?""", (prefix,))
+      
 
 class _GraphManager(object):
   def _abbreviate  (self, iri, create_if_missing = True):
@@ -430,7 +436,7 @@ class World(_GraphManager):
 
   def forget_reference(self, python_entity):
     self._entities.pop(python_entity.storid, None)
-    
+
   def get_full_text_search_properties(self): return self._full_text_search_properties
   def set_full_text_search_properties(self, l):
     old = self._full_text_search_properties
@@ -776,7 +782,7 @@ class World(_GraphManager):
       
       if is_a_bnodes:
         list.extend(entity.is_a, (onto._parse_bnode(bnode) for onto, bnode in is_a_bnodes))
-        
+
     return entity
   
   def _parse_bnode(self, bnode):
@@ -896,7 +902,7 @@ class Ontology(Namespace, _GraphManager):
       self.world.graph.release_write_lock()
 
   def _entity_destroyed(self, entity): pass
-    
+      
   def get_imported_ontologies(self): return self._imported_ontologies
   def set_imported_ontologies(self, l):
     old = self._imported_ontologies
@@ -1060,6 +1066,7 @@ class Ontology(Namespace, _GraphManager):
     # Loads new props
     props = []
     for prop_storid in itertools.chain(self._get_obj_triples_po_s(rdf_type, owl_object_property), self._get_obj_triples_po_s(rdf_type, owl_data_property), self._get_obj_triples_po_s(rdf_type, owl_annotation_property)):
+      if prop_storid < 0: continue # Anonymous property
       Prop = self.world._get_by_storid(prop_storid)
       python_name_d = self.world._get_data_triple_sp_od(prop_storid, owlready_python_name)
       
