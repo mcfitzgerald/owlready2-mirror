@@ -23,7 +23,9 @@ from collections import defaultdict, Counter
 from owlready2 import *
 
 
-def import_icd10_french_claml(atih_data = "https://www.atih.sante.fr/sites/default/files/public/content/3963/cim10fmclassification_internationale_des_maladies_cim-10-fr_2021syst_claml_20210302.zip"):
+#def import_icd10_french_claml(atih_data = "https://www.atih.sante.fr/sites/default/files/public/content/3963/cim10fmclassification_internationale_des_maladies_cim-10-fr_2021syst_claml_20210302.zip"):
+def import_icd10_french_claml(atih_data = "https://www.atih.sante.fr/sites/default/files/public/content/4674/cim10fr2024syst_claml_20231215.zip"):
+  
   import xml.sax as sax, xml.sax.handler as handler
   
   PYM  = get_ontology("http://PYM/").load()
@@ -195,10 +197,10 @@ def import_icd10_french_claml(atih_data = "https://www.atih.sante.fr/sites/defau
         o2 = ICD10_FRENCH[o]
         if o2: p[s].append(o2)
         
-
+        
     for k, v in CHAPTER_2_CODE.items():
       ICD10_FRENCH[k].name = v
-    
+      
   default_world.save()
 
 import_icd10_french = import_icd10_french_claml

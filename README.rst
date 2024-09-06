@@ -784,7 +784,7 @@ version 2 - 0.47
   * Fix prop1[prop2 in OPTIONAL blocks in SPARQL queries
   * Fix individuals belonging to several classes when one of these classes has a OneOf construct including that individual
   * Fix descendants when using subclasses of ThingClass (as PyMedTermino2 does)
-
+  * Fix and update pymedtermino2
 
 Links
 -----

@@ -766,7 +766,7 @@ class World(_GraphManager):
             print("* Owlready2 * WARNING: AnnotationProperty %s belongs to more than one entity types: %s; I'm trying to fix it..." % (full_iri, list(types) + is_a_entities), file = sys.stderr)
             is_a_entities = [t for t in is_a_entities if issubclass_python(t, AnnotationProperty)]
             entity = AnnotationPropertyClass(name, (AnnotationProperty,), { "namespace" : namespace, "is_a" : is_a_entities, "storid" : storid } )
-          
+            
       elif main_type is Thing:
         if   len(types) == 1: entity = types[0](name = name, namespace = namespace)
         elif len(types) >  1: entity = FusionClass._get_fusion_class(types)(name = name, namespace = namespace, is_a = types)
@@ -782,7 +782,7 @@ class World(_GraphManager):
       
       if is_a_bnodes:
         list.extend(entity.is_a, (onto._parse_bnode(bnode) for onto, bnode in is_a_bnodes))
-
+        
     return entity
   
   def _parse_bnode(self, bnode):

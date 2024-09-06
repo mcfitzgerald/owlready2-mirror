@@ -217,7 +217,9 @@ def parse_mrrel(PYM, terminologies, langs, importer, f, remnant_previous = ""):
     importer.check_insert()
     previous = current
     
-    
+  return "", previous   
+
+
 def parse_mrsat(PYM, terminologies, langs, importer, f, remnant_previous = ""):
   if remnant_previous == "":
     remnant = ""
