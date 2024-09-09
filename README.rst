@@ -785,6 +785,8 @@ version 2 - 0.47
   * Fix individuals belonging to several classes when one of these classes has a OneOf construct including that individual
   * Fix descendants when using subclasses of ThingClass (as PyMedTermino2 does)
   * Fix and update pymedtermino2
+  * Fix SPARQL queries with BIND and UNION
+    
 
 Links
 -----

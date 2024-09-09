@@ -1102,7 +1102,7 @@ class UnionBlock(Block):
     if len(self[0]) == 2:
       r = self._to_simple_union2()
       if r: return r
-      
+
     for i in self:
       if not isinstance(i, SimpleTripleBlock): return None
       if len(i) > 1: return None
@@ -1148,6 +1148,7 @@ class UnionBlock(Block):
       if len(i) != 2: return None
       if getattr(i[0][1], "storid", None) != rdf_type: return None
       if getattr(i[0][1], "modifier", None): return None
+      if isinstance(i[1], Bind): return None
       if getattr(i[1][1], "storid", None) != rdfs_subclassof: return None
       if repr(i[0][2]) != repr(i[1][0]): return None
       ss.add(repr(i[0][0]))
@@ -1318,8 +1319,8 @@ class Bind(object):
       self.referenced_var_names.add(expression.value)
       
   def _get_ordered_vars(self, vars, ordered_vars):
-    _var_found(self.var.values, vars, ordered_vars)
-  
+    _var_found(self.var.value, vars, ordered_vars)
+    
   
 class Filter(object):
   def __init__(self, constraint):

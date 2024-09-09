@@ -11009,7 +11009,92 @@ SELECT ?clinician (COUNT(?patient) AS ?nb) {
        
     assert { tuple(x) for x in r } == { (d1, 2), (d2, 1), (h1, 1), (h2, 2) }
     
+  def test_174(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      
+      class p1(C >> int): pass
+      class p2(C >> int): pass
+      
+      c1 = C()
+      c1.p1 = [1]
+      c1.p2 = [2]
 
+    sparql = """
+SELECT ?p {
+  ?c a onto:C .
+  {
+    onto:c1 onto:p1 ?p1 .
+    BIND(?p1 AS ?p)
+  }
+  UNION
+  {
+    onto:c1 onto:p2 ?p2 .
+    BIND(?p2 AS ?p)
+  }
+}
+"""
+    q, r = self.sparql(world, sparql)
+    
+    assert { tuple(x) for x in r } == { (1,), (2,) }
+    
+  def test_175(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class D(Thing): pass
+      class E(Thing): pass
+      
+      c1 = C()
+      d1 = D()
+      d2 = D()
+      e1 = E()
+      
+    sparql = """
+SELECT ?c {
+  {
+    ?c a onto:C .
+    BIND(?c AS ?i2)
+  } UNION {
+    ?c a onto:D .
+  }
+}
+"""
+    q, r = self.sparql(world, sparql)
+    
+    assert { tuple(x) for x in r } == { (c1,), (d1,), (d2,) }
+    
+  def test_176(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class D(Thing): pass
+      class E(Thing): pass
+      
+      c1 = C()
+      d1 = D()
+      d2 = D()
+      e1 = E()
+      
+    sparql = """
+SELECT DISTINCT ?c {
+  {
+    ?c a onto:C .
+    BIND(?c AS ?i2)
+    ?d a onto:D .
+  } UNION {
+    ?c a onto:D .
+  }
+}
+"""
+    q, r = self.sparql(world, sparql)
+    
+    assert { tuple(x) for x in r } == { (c1,), (d1,), (d2,) }
+    
     
 # Add test for Pellet
 for Class in [Test, Paper]:
