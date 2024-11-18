@@ -62,7 +62,7 @@ class _ConnexionPool(object):
 
 class Graph(BaseMainGraph):
   _SUPPORT_CLONING = True
-  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None, extra_lock = None, connection = None):
+  def __init__(self, filename, clone = None, exclusive = True, sqlite_tmp_dir = "", world = None, profiling = False, read_only = False, enable_thread_parallelism = False, lock = None, extra_lock = None, connection = None, journal_mode = None):
     exists        = os.path.exists(filename) and os.path.getsize(filename) # BEFORE creating db!
     initialize_db = (clone is None) and ((filename == ":memory:") or (not exists))
     
@@ -85,7 +85,7 @@ class Graph(BaseMainGraph):
     if options: uri = "%s?%s" % (uri, "&".join(options))
 
     self.db = connection or sqlite3.connect(uri, isolation_level = "EXCLUSIVE" if exclusive else "DEFERRED", check_same_thread = False, uri = True)
-
+    
     #print("XXX", filename, connection, read_only)
     if exclusive: self.db.execute("""PRAGMA locking_mode = EXCLUSIVE""")
     if exclusive and read_only: self.db.execute("""PRAGMA read_uncommitted = True""") # Exclusive + no write => no need for read lock
@@ -94,6 +94,7 @@ class Graph(BaseMainGraph):
     self.db.execute("""PRAGMA cache_size = -200000""")
     self.db.execute("""PRAGMA mmap_size = 30000000000""")
     self.db.execute("""PRAGMA page_size = 32768""")
+    if journal_mode: self.db.execute("""PRAGMA journal_mode = %s""" % journal_mode)
     
     if sqlite_tmp_dir:
       try: self.db.execute("""PRAGMA temp_store_directory = '%s'""" % sqlite_tmp_dir)
@@ -148,7 +149,6 @@ class Graph(BaseMainGraph):
       if exclusive: raise ValueError("Cannot enable thread parallelism with exclusive mode! Please add 'exclusive=False'.")
       self.has_thread_parallelism = True
       self.connexion_pool  = _ConnexionPool(uri)
-      
       
     self.c_2_onto          = {}
     self.onto_2_subgraph   = {}
