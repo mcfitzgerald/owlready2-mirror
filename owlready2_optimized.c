@@ -12232,7 +12232,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *       for i in content:
  *         if   i[0] == "REL":             # <<<<<<<<<<<<<<
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
     if (unlikely(__pyx_v_i == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
@@ -12248,7 +12248,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *       for i in content:
  *         if   i[0] == "REL":
  *           drop, p, o = i             # <<<<<<<<<<<<<<
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((bn, p, o))
  */
       if (likely(__pyx_v_i != Py_None)) {
@@ -12288,11 +12288,19 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       /* "owlready2_optimized.pyx":419
  *         if   i[0] == "REL":
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
  *           objs.append((bn, p, o))
  *         elif i[0] == "DAT":
  */
-      __pyx_t_2 = PyUnicode_Check(__pyx_v_o); 
+      __pyx_t_9 = PyUnicode_Check(__pyx_v_o); 
+      if (!__pyx_t_9) {
+      } else {
+        __pyx_t_2 = __pyx_t_9;
+        goto __pyx_L8_bool_binop_done;
+      }
+      __pyx_t_9 = PyInt_Check(__pyx_v_o); 
+      __pyx_t_2 = __pyx_t_9;
+      __pyx_L8_bool_binop_done:;
       __pyx_t_9 = (!__pyx_t_2);
       if (__pyx_t_9) {
         if (unlikely(!__pyx_cur_scope->__pyx_v_rebuild_bn)) { __Pyx_RaiseClosureNameError("rebuild_bn"); __PYX_ERR(0, 419, __pyx_L1_error) }
@@ -12304,7 +12312,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
 
       /* "owlready2_optimized.pyx":420
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((bn, p, o))             # <<<<<<<<<<<<<<
  *         elif i[0] == "DAT":
  *           drop, p, o, d = i
@@ -12333,17 +12341,17 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *       for i in content:
  *         if   i[0] == "REL":             # <<<<<<<<<<<<<<
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
       goto __pyx_L6;
     }
 
     /* "owlready2_optimized.pyx":421
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((bn, p, o))
  *         elif i[0] == "DAT":             # <<<<<<<<<<<<<<
  *           drop, p, o, d = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
     if (unlikely(__pyx_v_i == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
@@ -12359,7 +12367,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *           objs.append((bn, p, o))
  *         elif i[0] == "DAT":
  *           drop, p, o, d = i             # <<<<<<<<<<<<<<
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           datas.append((bn, p, o, d))
  */
       if (likely(__pyx_v_i != Py_None)) {
@@ -12406,11 +12414,19 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       /* "owlready2_optimized.pyx":423
  *         elif i[0] == "DAT":
  *           drop, p, o, d = i
- *           if not isinstance(o, str): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
  *           datas.append((bn, p, o, d))
  *         elif i[0] == "INV":
  */
-      __pyx_t_9 = PyUnicode_Check(__pyx_v_o); 
+      __pyx_t_2 = PyUnicode_Check(__pyx_v_o); 
+      if (!__pyx_t_2) {
+      } else {
+        __pyx_t_9 = __pyx_t_2;
+        goto __pyx_L11_bool_binop_done;
+      }
+      __pyx_t_2 = PyInt_Check(__pyx_v_o); 
+      __pyx_t_9 = __pyx_t_2;
+      __pyx_L11_bool_binop_done:;
       __pyx_t_2 = (!__pyx_t_9);
       if (__pyx_t_2) {
         if (unlikely(!__pyx_cur_scope->__pyx_v_rebuild_bn)) { __Pyx_RaiseClosureNameError("rebuild_bn"); __PYX_ERR(0, 423, __pyx_L1_error) }
@@ -12422,7 +12438,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
 
       /* "owlready2_optimized.pyx":424
  *           drop, p, o, d = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           datas.append((bn, p, o, d))             # <<<<<<<<<<<<<<
  *         elif i[0] == "INV":
  *           drop, p, o = i
@@ -12450,21 +12466,21 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
 
       /* "owlready2_optimized.pyx":421
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((bn, p, o))
  *         elif i[0] == "DAT":             # <<<<<<<<<<<<<<
  *           drop, p, o, d = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
       goto __pyx_L6;
     }
 
     /* "owlready2_optimized.pyx":425
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           datas.append((bn, p, o, d))
  *         elif i[0] == "INV":             # <<<<<<<<<<<<<<
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
     if (unlikely(__pyx_v_i == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
@@ -12480,7 +12496,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *           datas.append((bn, p, o, d))
  *         elif i[0] == "INV":
  *           drop, p, o = i             # <<<<<<<<<<<<<<
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((o, p, bn))
  */
       if (likely(__pyx_v_i != Py_None)) {
@@ -12520,11 +12536,19 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       /* "owlready2_optimized.pyx":427
  *         elif i[0] == "INV":
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)             # <<<<<<<<<<<<<<
  *           objs.append((o, p, bn))
  *         elif i[0] == "COL":
  */
-      __pyx_t_2 = PyUnicode_Check(__pyx_v_o); 
+      __pyx_t_9 = PyUnicode_Check(__pyx_v_o); 
+      if (!__pyx_t_9) {
+      } else {
+        __pyx_t_2 = __pyx_t_9;
+        goto __pyx_L14_bool_binop_done;
+      }
+      __pyx_t_9 = PyInt_Check(__pyx_v_o); 
+      __pyx_t_2 = __pyx_t_9;
+      __pyx_L14_bool_binop_done:;
       __pyx_t_9 = (!__pyx_t_2);
       if (__pyx_t_9) {
         if (unlikely(!__pyx_cur_scope->__pyx_v_rebuild_bn)) { __Pyx_RaiseClosureNameError("rebuild_bn"); __PYX_ERR(0, 427, __pyx_L1_error) }
@@ -12536,7 +12560,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
 
       /* "owlready2_optimized.pyx":428
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((o, p, bn))             # <<<<<<<<<<<<<<
  *         elif i[0] == "COL":
  *           drop, p, *l = i
@@ -12561,21 +12585,21 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
       /* "owlready2_optimized.pyx":425
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           datas.append((bn, p, o, d))
  *         elif i[0] == "INV":             # <<<<<<<<<<<<<<
  *           drop, p, o = i
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  */
       goto __pyx_L6;
     }
 
     /* "owlready2_optimized.pyx":429
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((o, p, bn))
  *         elif i[0] == "COL":             # <<<<<<<<<<<<<<
  *           drop, p, *l = i
- *           l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]
+ *           l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]
  */
     if (unlikely(__pyx_v_i == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
@@ -12591,7 +12615,7 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
  *           objs.append((o, p, bn))
  *         elif i[0] == "COL":
  *           drop, p, *l = i             # <<<<<<<<<<<<<<
- *           l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]
+ *           l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]
  *           objs.append((bn, p, new_list2(l, objs, new_blank)))
  */
       {
@@ -12601,17 +12625,17 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
         __Pyx_GOTREF(__pyx_t_10);
         __pyx_t_11 = __Pyx_PyObject_GetIterNextFunc(__pyx_t_10);
         for (index=0; index < 2; index++) {
-          PyObject* item = __pyx_t_11(__pyx_t_10); if (unlikely(!item)) goto __pyx_L10_unpacking_failed;
+          PyObject* item = __pyx_t_11(__pyx_t_10); if (unlikely(!item)) goto __pyx_L16_unpacking_failed;
           __Pyx_GOTREF(item);
           *(temps[index]) = item;
         }
-        goto __pyx_L11_unpacking_done;
-        __pyx_L10_unpacking_failed:;
+        goto __pyx_L17_unpacking_done;
+        __pyx_L16_unpacking_failed:;
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         __pyx_t_11 = NULL;
         if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
         __PYX_ERR(0, 430, __pyx_L1_error)
-        __pyx_L11_unpacking_done:;
+        __pyx_L17_unpacking_done:;
         if (!(likely(PyUnicode_CheckExact(__pyx_t_6))||((__pyx_t_6) == Py_None) || __Pyx_RaiseUnexpectedTypeError("unicode", __pyx_t_6))) __PYX_ERR(0, 430, __pyx_L1_error)
       }
       __pyx_t_8 = PySequence_List(__pyx_t_10); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 430, __pyx_L1_error)
@@ -12627,12 +12651,12 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       /* "owlready2_optimized.pyx":431
  *         elif i[0] == "COL":
  *           drop, p, *l = i
- *           l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]             # <<<<<<<<<<<<<<
+ *           l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]             # <<<<<<<<<<<<<<
  *           objs.append((bn, p, new_list2(l, objs, new_blank)))
  *         else:
  */
       { /* enter inner scope */
-        __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 431, __pyx_L14_error)
+        __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 431, __pyx_L20_error)
         __Pyx_GOTREF(__pyx_t_8);
         __pyx_t_6 = __pyx_v_l; __Pyx_INCREF(__pyx_t_6);
         __pyx_t_12 = 0;
@@ -12640,55 +12664,63 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
           {
             Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_t_6);
             #if !CYTHON_ASSUME_SAFE_MACROS
-            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 431, __pyx_L14_error)
+            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 431, __pyx_L20_error)
             #endif
             if (__pyx_t_12 >= __pyx_temp) break;
           }
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_12); __Pyx_INCREF(__pyx_t_7); __pyx_t_12++; if (unlikely((0 < 0))) __PYX_ERR(0, 431, __pyx_L14_error)
+          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_12); __Pyx_INCREF(__pyx_t_7); __pyx_t_12++; if (unlikely((0 < 0))) __PYX_ERR(0, 431, __pyx_L20_error)
           #else
-          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_6, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 431, __pyx_L14_error)
+          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_6, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 431, __pyx_L20_error)
           __Pyx_GOTREF(__pyx_t_7);
           #endif
           __Pyx_XDECREF_SET(__pyx_8genexpr1__pyx_v_x, __pyx_t_7);
           __pyx_t_7 = 0;
-          __pyx_t_9 = PyUnicode_Check(__pyx_8genexpr1__pyx_v_x); 
+          __pyx_t_2 = PyUnicode_Check(__pyx_8genexpr1__pyx_v_x); 
+          if (!__pyx_t_2) {
+          } else {
+            __pyx_t_9 = __pyx_t_2;
+            goto __pyx_L26_bool_binop_done;
+          }
+          __pyx_t_2 = PyInt_Check(__pyx_8genexpr1__pyx_v_x); 
+          __pyx_t_9 = __pyx_t_2;
+          __pyx_L26_bool_binop_done:;
           if (!__pyx_t_9) {
-            goto __pyx_L18_next_or;
+            goto __pyx_L24_next_or;
           } else {
           }
-          __pyx_t_9 = __Pyx_PyObject_IsTrue(__pyx_8genexpr1__pyx_v_x); if (unlikely((__pyx_t_9 < 0))) __PYX_ERR(0, 431, __pyx_L14_error)
+          __pyx_t_9 = __Pyx_PyObject_IsTrue(__pyx_8genexpr1__pyx_v_x); if (unlikely((__pyx_t_9 < 0))) __PYX_ERR(0, 431, __pyx_L20_error)
           if (!__pyx_t_9) {
           } else {
             __Pyx_INCREF(__pyx_8genexpr1__pyx_v_x);
             __pyx_t_7 = __pyx_8genexpr1__pyx_v_x;
-            goto __pyx_L17_bool_binop_done;
+            goto __pyx_L23_bool_binop_done;
           }
-          __pyx_L18_next_or:;
-          if (unlikely(!__pyx_cur_scope->__pyx_v_rebuild_bn)) { __Pyx_RaiseClosureNameError("rebuild_bn"); __PYX_ERR(0, 431, __pyx_L14_error) }
-          __pyx_t_10 = __pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(__pyx_cur_scope->__pyx_v_rebuild_bn, __pyx_8genexpr1__pyx_v_x); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 431, __pyx_L14_error)
+          __pyx_L24_next_or:;
+          if (unlikely(!__pyx_cur_scope->__pyx_v_rebuild_bn)) { __Pyx_RaiseClosureNameError("rebuild_bn"); __PYX_ERR(0, 431, __pyx_L20_error) }
+          __pyx_t_10 = __pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(__pyx_cur_scope->__pyx_v_rebuild_bn, __pyx_8genexpr1__pyx_v_x); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 431, __pyx_L20_error)
           __Pyx_GOTREF(__pyx_t_10);
           __Pyx_INCREF(__pyx_t_10);
           __pyx_t_7 = __pyx_t_10;
           __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-          __pyx_L17_bool_binop_done:;
-          if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 431, __pyx_L14_error)
+          __pyx_L23_bool_binop_done:;
+          if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 431, __pyx_L20_error)
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
         __Pyx_XDECREF(__pyx_8genexpr1__pyx_v_x); __pyx_8genexpr1__pyx_v_x = 0;
-        goto __pyx_L21_exit_scope;
-        __pyx_L14_error:;
+        goto __pyx_L29_exit_scope;
+        __pyx_L20_error:;
         __Pyx_XDECREF(__pyx_8genexpr1__pyx_v_x); __pyx_8genexpr1__pyx_v_x = 0;
         goto __pyx_L1_error;
-        __pyx_L21_exit_scope:;
+        __pyx_L29_exit_scope:;
       } /* exit inner scope */
       __Pyx_DECREF_SET(__pyx_v_l, ((PyObject*)__pyx_t_8));
       __pyx_t_8 = 0;
 
       /* "owlready2_optimized.pyx":432
  *           drop, p, *l = i
- *           l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]
+ *           l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]
  *           objs.append((bn, p, new_list2(l, objs, new_blank)))             # <<<<<<<<<<<<<<
  *         else:
  *           print(i)
@@ -12723,11 +12755,11 @@ static PyObject *__pyx_pf_19owlready2_optimized_12parse_rdfxml_12rebuild_bn(PyOb
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "owlready2_optimized.pyx":429
- *           if not isinstance(o, str): o = rebuild_bn(o)
+ *           if not isinstance(o, (str, int)): o = rebuild_bn(o)
  *           objs.append((o, p, bn))
  *         elif i[0] == "COL":             # <<<<<<<<<<<<<<
  *           drop, p, *l = i
- *           l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]
+ *           l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]
  */
       goto __pyx_L6;
     }

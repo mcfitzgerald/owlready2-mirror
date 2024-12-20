@@ -416,19 +416,19 @@ def parse_rdfxml(object f, object queue, str default_base, int batch_size):
       for i in content:
         if   i[0] == "REL":
           drop, p, o = i
-          if not isinstance(o, str): o = rebuild_bn(o)
+          if not isinstance(o, (str, int)): o = rebuild_bn(o)
           objs.append((bn, p, o))
         elif i[0] == "DAT":
           drop, p, o, d = i
-          if not isinstance(o, str): o = rebuild_bn(o)
+          if not isinstance(o, (str, int)): o = rebuild_bn(o)
           datas.append((bn, p, o, d))
         elif i[0] == "INV":
           drop, p, o = i
-          if not isinstance(o, str): o = rebuild_bn(o)
+          if not isinstance(o, (str, int)): o = rebuild_bn(o)
           objs.append((o, p, bn))
         elif i[0] == "COL":
           drop, p, *l = i
-          l = [(isinstance(x, str) and x) or rebuild_bn(x) for x in l]
+          l = [(isinstance(x, (str, int)) and x) or rebuild_bn(x) for x in l]
           objs.append((bn, p, new_list2(l, objs, new_blank)))
         else:
           print(i)

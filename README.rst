@@ -786,6 +786,12 @@ version 2 - 0.47
   * Fix descendants when using subclasses of ThingClass (as PyMedTermino2 does)
   * Fix and update pymedtermino2
   * Fix SPARQL queries with BIND and UNION
+
+version 2 - 0.48
+****************
+
+* Bugfixes:
+  * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
     
 
 Links
