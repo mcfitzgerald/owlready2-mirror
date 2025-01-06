@@ -211,7 +211,6 @@ class Graph(BaseMainGraph):
       self.indexed = True
       if clone:
         s = "\n".join(clone.db.iterdump())
-        open("/tmp/t", "w").write(s)
         self.db.cursor().executescript(s)
         
       version = self.execute("SELECT version FROM store").fetchone()[0]
@@ -235,6 +234,9 @@ class Graph(BaseMainGraph):
   #  with self.connexion_pool.get() as db:
   #    return self._get_gevent_hub().threadpool.apply(db.execute, (sql, args))
   
+  def __del__(self):
+    self.db.close()
+    
   def get_wal_mode(self):
     mode = list(self.execute("PRAGMA journal_mode"))[0][0]
     if mode == "delete": return False

@@ -792,6 +792,7 @@ version 2 - 0.48
 
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
+  * Properly close database when a World is destroyed
     
 
 Links
