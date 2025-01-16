@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import sys, os, io, types, zipfile, urllib.request
+import sys, os, io, types, zipfile, requests
 from collections import defaultdict, Counter
 from owlready2 import *
 
@@ -33,8 +33,8 @@ def import_icd10_french_claml(atih_data = "https://www.atih.sante.fr/sites/defau
   
   print("Importing CIM10 from %s..." % atih_data)
   if atih_data.startswith("http:") or atih_data.startswith("https:"):
-    f = urllib.request.urlopen(atih_data)
-    f = io.BytesIO(f.read())
+    f = requests.get(atih_data)
+    f = io.BytesIO(f._content)
   else:
     f = open(atih_data, "rb")
   
@@ -214,8 +214,8 @@ def import_icd10_french_txt(atih_data = "https://www.atih.sante.fr/plateformes-d
   
   print("Importing CIM10 from %s..." % atih_data)
   if atih_data.startswith("http:") or atih_data.startswith("https:"):
-    f = urllib.request.urlopen(atih_data)
-    f = io.BytesIO(f.read())
+    f = requests.get(atih_data)
+    f = io.BytesIO(f._content)
   else:
     f = open(atih_data, "rb")
   
