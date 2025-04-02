@@ -57,8 +57,3 @@ def execute_many(onto, prepared_queries, paramss, spawn = True, nb_thread = 3, s
     with onto:
       return [q.execute(params, raw) for raw, q, params in zip(raws, prepared_queries, paramss)]
     
-    #with onto:
-    #  return [q.execute(params) for q, params in zip(prepared_queries, paramss)]
-
-
-

@@ -300,6 +300,14 @@ class PreparedQuery(object):
     return db.execute(self.sql, sql_params)
   
 class PreparedSelectQuery(PreparedQuery):
+  def __getstate__(self):
+    return [self.sql, self.column_names, self.column_types, self.nb_parameter, self.parameter_datatypes]
+  
+  def __setstate__(self, l):
+    import owlready2
+    self.sql, self.column_names, self.column_types, self.nb_parameter, self.parameter_datatypes = l
+    self.world = owlready2.default_world
+    
   def execute(self, params = (), execute_raw_result = None, spawn = False):
     if execute_raw_result is None: execute_raw_result = self.execute_raw(params, spawn)
     for l in execute_raw_result:
@@ -486,6 +494,15 @@ class PreparedModifyQuery(PreparedQuery):
     self.deletes  = deletes
     self.inserts  = inserts
     self.select_param_indexes = select_param_indexes
+    
+  def __getstate__(self):
+    return [self.sql, self.column_names, self.column_types, self.nb_parameter, self.parameter_datatypes, self.ontology and self.ontology.iri, self.deletes, self.inserts, self.select_param_indexes]
+  
+  def __setstate__(self, l):
+    import owlready2
+    self.sql, self.column_names, self.column_types, self.nb_parameter, self.parameter_datatypes, ontology_iri, self.deletes, self.inserts, self.select_param_indexes = l
+    self.world = owlready2.default_world
+    self.ontology = ontology_iri and self.world.get_ontology(ontology_iri)
     
   def execute_raw(self, params = (), spawn = False):
     if self.sql: return PreparedQuery.execute_raw(self, [params[i] for i in self.select_param_indexes], spawn)
