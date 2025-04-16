@@ -420,6 +420,7 @@ class NamedIndividual(Thing): pass
 
 class FusionClass(ThingClass):
   ontology = anonymous
+  _is_fusion_class = True
   
   def __repr__(self): return "<FusionClass %s>" % ", ".join(repr(c) for c in self.__bases__)
   

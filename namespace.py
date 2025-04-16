@@ -412,7 +412,7 @@ class World(_GraphManager):
         
     for iri in self.graph.ontologies_iris():
       self.get_ontology(iri) # Create all possible ontologies if not yet done
-
+      
     self._full_text_search_properties = CallbackList([self._get_by_storid(storid, default_to_none = True) or storid for storid in self.graph.get_fts_prop_storid()], self, World._full_text_search_changed)
     
   def close(self):
@@ -1058,7 +1058,8 @@ class Ontology(Namespace, _GraphManager):
   
   def _load_properties(self):
     # Update props from other ontologies, if needed
-    for prop in list(self.world._props.values()):
+    for prop_storid, in self.world.graph.execute("""SELECT q1.s FROM objs q1, objs q2 WHERE q1.p=6 AND q1.o IN (13, 14, 15) AND q2.s=q1.s AND q2.c=?""", (self.graph.c,)):
+      prop = self.world._get_by_storid(prop_storid)
       if prop.namespace.world is owl_world: continue
       if prop._check_update(self) and _LOG_LEVEL:
         print("* Owlready2 * Reseting property %s: new triples are now available." % prop)

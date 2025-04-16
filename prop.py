@@ -124,11 +124,11 @@ class PropertyClass(EntityClass):
         Prop, PropertyClass._class_property_type_changed)
       type.__setattr__(Prop, "_class_property_type", _class_property_type)
       
-      if issubclass(Prop, ObjectProperty):
+      if issubclass_python(Prop, ObjectProperty) and onto._has_obj_triple_spo(None, owl_inverse_property, Prop.storid):
         Prop._define_inverse_property()
       return True
     
-    if issubclass(Prop, ObjectProperty) and onto._has_obj_triple_spo(None, owl_inverse_property, Prop.storid):
+    if issubclass_python(Prop, ObjectProperty) and onto._has_obj_triple_spo(None, owl_inverse_property, Prop.storid):
       Prop._define_inverse_property()
       return True
       

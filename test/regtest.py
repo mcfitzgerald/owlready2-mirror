@@ -2847,7 +2847,7 @@ class Test(BaseTest, unittest.TestCase):
       
     o2 = BytesIO()
     onto2.save(o2)
-    
+
     w2 = self.new_world()
     onto1 = w2.get_ontology("http://test.org/t1.owl").load(fileobj = BytesIO(o1.getvalue()))
     onto2 = w2.get_ontology("http://test.org/t2.owl").load(fileobj = BytesIO(o2.getvalue()))

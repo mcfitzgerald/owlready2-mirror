@@ -791,6 +791,7 @@ version 2 - 0.48
 ****************
 
 * Make prepared SPARQL queries picklable
+* Faster ontology loading (espescially when having a lot of small ontologies)
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed
