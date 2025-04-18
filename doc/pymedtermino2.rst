@@ -12,6 +12,7 @@ terminologies in Python. The following terminologies are supported:
    - ICD10
    - MedDRA
  - ICD10 in French (CIM10)
+ - SNOMED CT in French
 
 The main features of PyMedTermino are:
 
@@ -75,6 +76,17 @@ The importation can take several minutes or hours, depending on the number of te
 
 >>> from owlready2.pymedtermino2.icd10_french import *
 >>> import_icd10_french()
+>>> default_world.save()
+
+5. Import French SNOMED CT (optional):
+
+   Download SNOMED CT French translation from https://smt.esante.gouv.fr/terminologie-snomed-ct-fr/
+   
+   Then unpack it and use file "terminologie-snomed-ct-fr-Juin 2024 v1.0/dat/SnomedCT_NationalFR_OWL_asserted_20240621.owl"
+   (exact name may vary according to version)
+   
+>>> from owlready2.pymedtermino2.snomedct_french import *
+>>> import_snomedct_french("terminologie-snomed-ct-fr-Juin 2024 v1.0/dat/SnomedCT_NationalFR_OWL_asserted_20240621.owl")
 >>> default_world.save()
 
    
@@ -267,6 +279,18 @@ The descendant_concepts() method returns all concepts in SNOMED CT.
 
 >>> for concept in SNOMEDCT_US.descendant_concepts(): [...]
 
+
+French translation
+------------------
+
+Contrary to ICD10 (see below), SNOMED CT French translation is integrated in the SNOMEDCT_US terminology.
+
+Here is an example:
+
+>>> SNOMEDCT_US["88531004"].label
+[locstr('Hypertrophy of kidney', 'en'), locstr('hypertrophie du rein', 'fr')]
+>>> SNOMEDCT_US["88531004"].label.fr
+['hypertrophie du rein']
 
 
 ICD10

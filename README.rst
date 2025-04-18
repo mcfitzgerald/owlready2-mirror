@@ -794,12 +794,13 @@ version 2 - 0.48
 * Make prepared SPARQL queries picklable
 * Support DELETE SPARQL queries with free variables in the DELETE part
 * Improve DELETE SPARQL queries in order to delete IRI/storid of entirely deleted entities
+* Add support for SNOMED CT French translation in PyMedTermino2
 * Add function owlready2.pymedtermino2.umls.prune() to prune terminologies to the descendants of the given concepts
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed
   * Use requests module for importing French ICD10 (urllib does not work)
-    
+  
 
 Links
 -----
