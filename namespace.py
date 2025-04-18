@@ -518,7 +518,7 @@ class World(_GraphManager):
           subs = [ontology._bnodes[s]]
           break
       else: subs = []
-        
+      
     for sub in subs:
       prop = self._entities.get(p)
       if   prop:
@@ -823,7 +823,7 @@ class Ontology(Namespace, _GraphManager):
         for method in self.graph.__class__.BASE_METHODS + self.graph.__class__.ONTO_METHODS:
           setattr(self, method, getattr(self.graph, method))
         if not new_in_quadstore:
-          self._load_properties()
+          self._load_properties(False) # Either new (=> nothing to update) or already in quadstore (update already done, no new triples)
 
       #world.ontologies[self._base_iri] = self
       world._register_ontology(self)
@@ -1064,14 +1064,15 @@ class Ontology(Namespace, _GraphManager):
         owlready2.default_world, owlready2.IRIS, owlready2.get_ontology, owlready2.get_namespace = saved
     return self
   
-  def _load_properties(self):
-    # Update props from other ontologies, if needed
-    for prop_storid, in self.world.graph.execute("""SELECT q1.s FROM objs q1, objs q2 WHERE q1.p=6 AND q1.o IN (13, 14, 15) AND q2.s=q1.s AND q2.c=?""", (self.graph.c,)):
-      prop = self.world._get_by_storid(prop_storid)
-      if prop.namespace.world is owl_world: continue
-      if prop._check_update(self) and _LOG_LEVEL:
-        print("* Owlready2 * Reseting property %s: new triples are now available." % prop)
-        
+  def _load_properties(self, update_props = True):
+    if update_props: # Update props from other ontologies, if needed
+      for prop_storid, in self.world.graph.execute("""SELECT DISTINCT q1.s FROM objs q1, objs q2 INDEXED BY index_objs_sp WHERE q1.p=6 AND q1.o IN (13, 14, 15) AND q2.s=q1.s AND q2.c=? AND q1.c != ?""", (self.graph.c, self.graph.c,)):
+        prop = self.world._get_by_storid(prop_storid)
+        print(prop_storid, prop, self)
+        if prop.namespace.world is owl_world: continue
+        if prop._check_update(self) and _LOG_LEVEL:
+          print("* Owlready2 * Reseting property %s: new triples are now available." % prop)
+          
     # Loads new props
     props = []
     for prop_storid in itertools.chain(self._get_obj_triples_po_s(rdf_type, owl_object_property), self._get_obj_triples_po_s(rdf_type, owl_data_property), self._get_obj_triples_po_s(rdf_type, owl_annotation_property)):
