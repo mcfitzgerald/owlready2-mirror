@@ -387,6 +387,7 @@ class EntityClass(type):
       else:
         for x in world._get_obj_triples_po_s(Class._rdfs_is_a, Class.storid):
           if not x < 0:
+            print(x)
             yield world._get_by_storid(x, None, ThingClass, Class.namespace.ontology)
         
   def constructs(Class, Prop = None):

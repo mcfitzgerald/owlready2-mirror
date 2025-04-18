@@ -129,13 +129,20 @@ class Translator(object):
           if x.value.startswith("??anon") or x.value.startswith("_:"): # a new blank node
             triple.append(("bn", x.value))
           else: # a normal var
-            column = var_2_column[x.value]
-            triple.append(("vars", column.index))
-            if len(triple) == o_pos: # in 'o' position => can be objs or datas!
-              if column.index + 1 < len(columns):
-                next_column = columns[column.index + 1]
-                if next_column.name.endswith("d"):
-                  triple.append(("vars", next_column.index))
+            column = var_2_column.get(x.value)
+            if column:
+              triple.append(("vars", column.index))
+              if len(triple) == o_pos: # in 'o' position => can be objs or datas!
+                if column.index + 1 < len(columns):
+                  next_column = columns[column.index + 1]
+                  if next_column.name.endswith("d"):
+                    triple.append(("vars", next_column.index))
+            else:
+              if is_insert: raise ValueError("Cannot insert variable %s not present in the where clause of the query!" % x.value)
+              triple.append(("any", 0))
+              if len(triple) == o_pos: # in 'o' position => can be objs or datas!
+                triple.append(("any", 0))
+                
         elif x.name == "PARAM":
           triple.append(("param", x.number - 1))
           if len(triple) == o_pos: # in 'o' position => can be datas!
@@ -152,7 +159,7 @@ class Translator(object):
             triple.append(("datas", d2))
             
       r.append(triple)
-      
+
     return r
   
   def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False, is_delete = False):
@@ -494,7 +501,14 @@ class PreparedModifyQuery(PreparedQuery):
     self.deletes  = deletes
     self.inserts  = inserts
     self.select_param_indexes = select_param_indexes
-    
+    if self.deletes:
+      delete_s = set()
+      delete_o = set()
+      for delete in self.deletes:
+        if   (delete[0][0] != "any") and (delete[1][0] == "any") and (delete[2][0] == "any"): delete_s.add(delete[0])
+        elif (delete[0][0] == "any") and (delete[1][0] == "any") and (delete[2][0] != "any"): delete_o.add(delete[2])
+      self.full_deletes = list(delete_s & delete_o) # Also destroy IRI/storid in resources table!
+      
   def __getstate__(self):
     return [self.sql, self.column_names, self.column_types, self.nb_parameter, self.parameter_datatypes, self.ontology and self.ontology.iri, self.deletes, self.inserts, self.select_param_indexes]
   
@@ -516,20 +530,30 @@ class PreparedModifyQuery(PreparedQuery):
     nb_match = 0
     if execute_raw_result is None: resultss = self.execute_raw(params, spawn)
     else:                          resultss = execute_raw_result
+    if self.deletes and self.full_deletes: full_delete_storids = []
     
     added_triples = []
     for results in set(resultss):
       nb_match += 1
-      
-      for delete in self.deletes:
-        triple = []
-        for type, value in delete:
-          if   type == "vars":          triple.append(results[value])
-          elif type == "param":         triple.append(self.world._to_rdf(params[value])[0])
-          elif type == "paramdatatype": triple.append(self.world._to_rdf(params[value])[1])
-          else:                         triple.append(value)
-        self.world._del_triple_with_update(*triple)
-        
+
+      if self.deletes:
+        for delete in self.deletes:
+          triple = []
+          for type, value in delete:
+            if   type == "vars":          triple.append(results[value])
+            elif type == "param":         triple.append(self.world._to_rdf(params[value])[0])
+            elif type == "paramdatatype": triple.append(self.world._to_rdf(params[value])[1])
+            elif type == "any":           triple.append(None)
+            else:                         triple.append(value)
+          self.world._del_triple_with_update(*triple)
+
+        for type, value in self.full_deletes:
+          storid = None
+          if   type == "vars":          storid = results[value]
+          elif type == "param":         storid = self.world._to_rdf(params[value])[0]
+          else:                         storid = value
+          if storid: full_delete_storids.append((storid,))
+          
       bns = {}
       for insert in self.inserts:
         triple = []
@@ -552,6 +576,10 @@ class PreparedModifyQuery(PreparedQuery):
         added_triples.append(triple)
         
     if added_triples: self.world._add_quads_with_update(self.ontology, added_triples)
+    
+    if self.deletes and self.full_deletes:
+      self.world.graph.db.executemany("DELETE FROM resources WHERE storid=?", full_delete_storids)
+      
     return nb_match
   
 
@@ -1183,6 +1211,7 @@ class SQLQuery(FuncSupport):
           sql_type = "objs"
         else:
           if self.is_delete:
+            continue
             sql = "NULL"
             sql_type = "quads"
           else:

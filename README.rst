@@ -793,6 +793,7 @@ version 2 - 0.48
 * Faster ontology loading (espescially when having a lot of small ontologies)
 * Make prepared SPARQL queries picklable
 * Support DELETE SPARQL queries with free variables in the DELETE part
+* Improve DELETE SPARQL queries in order to delete IRI/storid of entirely deleted entities
 * Add function owlready2.pymedtermino2.umls.prune() to prune terminologies to the descendants of the given concepts
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.

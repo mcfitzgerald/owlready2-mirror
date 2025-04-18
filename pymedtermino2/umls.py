@@ -761,19 +761,17 @@ def import_umls(umls_zip_filename, terminologies = None, langs = None, fts_index
 def prune(PYM, termino, restrict_to_descendants, call_vacuum = True):
   if isinstance(termino, str): termino = PYM[termino]
   
-  sparql = """
-SELECT (STORID(?t) AS ?storid) {
-  ?t PYM:terminology <%s> .""" % termino.iri
+#   sparql = """
+# SELECT (STORID(?t) AS ?storid) {
+#   ?t PYM:terminology <%s> .""" % termino.iri
   
-  for name in restrict_to_descendants:
-    sparql += """
-  FILTER NOT EXISTS {
-    ?t rdfs:subClassOf* <http://PYM/%s/%s> .
-  }""" % (termino.name, name)
+#   for name in restrict_to_descendants:
+#     sparql += """  FILTER NOT EXISTS { ?t rdfs:subClassOf* <http://PYM/%s/%s> . }\n""" % (termino.name, name)
+#     sparql += """  FILTER NOT EXISTS { <http://PYM/%s/%s> rdfs:subClassOf* ?t . }\n""" % (termino.name, name)
     
-  sparql += """\n}"""
+#   sparql += """\n}"""
   
-  storids = list(PYM.world.sparql(sparql))
+#   storids = list(PYM.world.sparql(sparql))
   
   
   sparql = """
@@ -785,18 +783,18 @@ WHERE {
   ?t PYM:terminology <%s> .""" % termino.iri
   
   for name in restrict_to_descendants:
-    sparql += """
-  FILTER NOT EXISTS {
-    ?t rdfs:subClassOf* <http://PYM/%s/%s> .
-  }""" % (termino.name, name)
+    sparql += """  FILTER NOT EXISTS { ?t rdfs:subClassOf* <http://PYM/%s/%s> . }\n""" % (termino.name, name)
+    sparql += """  FILTER NOT EXISTS { <http://PYM/%s/%s> rdfs:subClassOf* ?t . }\n""" % (termino.name, name)
     
   sparql += """\n}"""
+
+  print(sparql)
   
   PYM.world.sparql(sparql)
   
   
-  PYM.world.graph.db.executemany("DELETE FROM resources WHERE storid=?", storids)
-
+  #PYM.world.graph.db.executemany("DELETE FROM resources WHERE storid=?", storids)
+  
   if call_vacuum:
     PYM.world.save()
     PYM.world.graph.execute("VACUUM")

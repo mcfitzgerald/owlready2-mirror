@@ -11115,6 +11115,8 @@ WHERE {
   ?x onto:i 1 .
 }""")
     
+    assert not list(world.graph.execute("SELECT * FROM resources WHERE storid=?", (c2.storid,)))
+    
     assert c3.p == [c1]
     
     del c3.p
@@ -11123,6 +11125,8 @@ WHERE {
     world._entities.clear()
     
     assert onto.c2 is None
+    
+    
     
       
 # Add test for Pellet
