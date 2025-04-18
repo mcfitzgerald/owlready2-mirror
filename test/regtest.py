@@ -11106,7 +11106,7 @@ SELECT DISTINCT ?c {
       c2 = C(i = [1, 2], p = [c1])
       c3 = C(i = [4], p = [c2, c1])
       
-    world.sparql("""
+    nb = world.sparql("""
 DELETE {
   ?x ?p1 ?o .
   ?s ?p2 ?x .
@@ -11115,6 +11115,7 @@ WHERE {
   ?x onto:i 1 .
 }""")
     
+    assert nb == 1
     assert not list(world.graph.execute("SELECT * FROM resources WHERE storid=?", (c2.storid,)))
     
     assert c3.p == [c1]
@@ -11126,6 +11127,53 @@ WHERE {
     
     assert onto.c2 is None
     
+  def test_178(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class i(C >> int): pass
+      class p(C >> Thing): pass
+      c1 = C(i = [3])
+      c2 = C(i = [1, 2], p = [c1])
+      c3 = C(i = [4], p = [c2, c1])
+      
+    nb = world.sparql("""
+DELETE {
+  ?x onto:p ?o .
+}
+WHERE {
+  ?x onto:i 1 .
+}""")
+    
+    assert nb == 1
+    assert c2.p == []
+    
+  def test_179(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class i(C >> int): pass
+      class p(C >> Thing): pass
+      c1 = C(i = [3])
+      c2 = C(i = [1, 2], p = [c1])
+      c3 = C(i = [4], p = [c2, c1])
+      
+    nb = world.sparql("""
+DELETE {
+  ?x onto:i ?o .
+}
+WHERE {
+  ?x onto:i 1 .
+}""")
+
+    c2.i
+    del c2.i
+    print(c2.i)
+    
+    assert nb == 1
+    assert c2.i == []
     
     
       

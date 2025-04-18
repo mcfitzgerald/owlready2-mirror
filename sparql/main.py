@@ -159,7 +159,6 @@ class Translator(object):
             triple.append(("datas", d2))
             
       r.append(triple)
-
     return r
   
   def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False, is_delete = False):

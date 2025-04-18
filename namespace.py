@@ -548,7 +548,7 @@ class World(_GraphManager):
             sub.range.remove(obj)
             return
           
-    if p is None:
+    if (p is None) or (o is None):
       self._del_obj_triple_raw_spo  (s,p,o)
       self._del_data_triple_raw_spod(s,p,o,d)
     else:

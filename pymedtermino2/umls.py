@@ -788,8 +788,6 @@ WHERE {
     
   sparql += """\n}"""
 
-  print(sparql)
-  
   PYM.world.sparql(sparql)
   
   
