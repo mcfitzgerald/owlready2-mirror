@@ -1068,7 +1068,6 @@ class Ontology(Namespace, _GraphManager):
     if update_props: # Update props from other ontologies, if needed
       for prop_storid, in self.world.graph.execute("""SELECT DISTINCT q1.s FROM objs q1, objs q2 INDEXED BY index_objs_sp WHERE q1.p=6 AND q1.o IN (13, 14, 15) AND q2.s=q1.s AND q2.c=? AND q1.c != ?""", (self.graph.c, self.graph.c,)):
         prop = self.world._get_by_storid(prop_storid)
-        print(prop_storid, prop, self)
         if prop.namespace.world is owl_world: continue
         if prop._check_update(self) and _LOG_LEVEL:
           print("* Owlready2 * Reseting property %s: new triples are now available." % prop)
