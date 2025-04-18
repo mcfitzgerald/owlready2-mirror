@@ -790,8 +790,10 @@ version 2 - 0.47
 version 2 - 0.48
 ****************
 
-* Make prepared SPARQL queries picklable
 * Faster ontology loading (espescially when having a lot of small ontologies)
+* Make prepared SPARQL queries picklable
+* Support DELETE SPARQL queries with free variables in the DELETE part
+* Add function owlready2.pymedtermino2.umls.prune() to prune terminologies to the descendants of the given concepts
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed

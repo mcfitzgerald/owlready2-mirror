@@ -155,32 +155,32 @@ class Translator(object):
       
     return r
   
-  def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False):
+  def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False, is_delete = False):
     if preliminary and not name: name = "prelim%s" % (len(self.preliminary_selects) + 1)
     
     if isinstance(block, UnionBlock) and block.simple_union_triples:
       block = SimpleTripleBlock(block.simple_union_triples)
       
     if   isinstance(block, SimpleTripleBlock):
-      s = SQLQuery(name)
+      s = SQLQuery(name, is_delete = is_delete)
       
     elif isinstance(block, OptionalBlock):
-      s = SQLQuery(name)
+      s = SQLQuery(name, is_delete = is_delete)
       s.optional = True
       
     elif isinstance(block, UnionBlock):
-      s = SQLCompoundQuery(name, nested_inside)
+      s = SQLCompoundQuery(name, nested_inside, is_delete = is_delete)
       if selects is None:
         selects = block.get_ordered_vars()
         
     elif isinstance(block, FilterBlock):
-      s = SQLNestedQuery(name)
+      s = SQLNestedQuery(name, is_delete = is_delete)
       s.exists = isinstance(block, ExistsBlock)
       if nested_inside: s.vars = nested_inside.vars
       preliminary = False
       
     elif isinstance(block, NotExistsBlock):
-      s = SQLCompoundQuery(name, nested_inside)
+      s = SQLCompoundQuery(name, nested_inside, is_delete = is_delete)
       
     elif isinstance(block, SubQueryBlock):
       s = block.parse()
@@ -528,7 +528,6 @@ class PreparedModifyQuery(PreparedQuery):
           elif type == "param":         triple.append(self.world._to_rdf(params[value])[0])
           elif type == "paramdatatype": triple.append(self.world._to_rdf(params[value])[1])
           else:                         triple.append(value)
-        #print("DEL", triple)
         self.world._del_triple_with_update(*triple)
         
       bns = {}
@@ -617,7 +616,7 @@ class Table(object):
   
   
 class SQLQuery(FuncSupport):
-  def __init__(self, name):
+  def __init__(self, name, is_delete = False):
     self.name                     = name
     self.preliminary              = False
     self.recursive                = False
@@ -634,7 +633,7 @@ class SQLQuery(FuncSupport):
     self.extra_sql                = ""
     self.select_simple_union      = False
     self.optional                 = False
-    
+    self.is_delete                = is_delete
     
   def __repr__(self): return "<%s '%s'>" % (self.__class__.__name__, self.sql())
 
@@ -1164,7 +1163,7 @@ class SQLQuery(FuncSupport):
         selected_parameter_index += 1
 
       return var_name, sql, sql_type, sql_d, sql_d_type
-    
+
     for select in selects:
       i += 1
       if isinstance(select, SimpleUnion):
@@ -1183,8 +1182,12 @@ class SQLQuery(FuncSupport):
           sql = "NULL"
           sql_type = "objs"
         else:
-          raise ValueError("Cannot select '%s'!" % select)
-        
+          if self.is_delete:
+            sql = "NULL"
+            sql_type = "quads"
+          else:
+            raise ValueError("Cannot select '%s'!" % select)
+          
       if isinstance(sql, str) and sql.startswith("IN "):
         if   not "," in sql: sql = sql[4 : -1]
         elif len(selects) == 1: pass # Ok
@@ -1246,7 +1249,7 @@ class SQLQuery(FuncSupport):
     
 class SQLCompoundQuery(object):
   recursive = False
-  def __init__(self, name, parent):
+  def __init__(self, name, parent, is_delete = False):
     self.name                    = name
     self.parent                  = parent
     self.translator              = CURRENT_TRANSLATOR.get()
@@ -1254,6 +1257,7 @@ class SQLCompoundQuery(object):
     self.preliminary             = False
     self.optional                = False
     self.has_select              = False
+    self.is_delete               = is_delete
     
   def __repr__(self): return "<%s '%s'>" % (self.__class__.__name__, self.sql())
   
@@ -1292,8 +1296,8 @@ class SQLCompoundQuery(object):
     
     
 class SQLNestedQuery(SQLQuery):
-  def __init__(self, name):
-    SQLQuery.__init__(self, name)
+  def __init__(self, name, is_delete = False):
+    SQLQuery.__init__(self, name, is_delete)
     self.exists = True
     
   def finalize_columns(self):
@@ -1320,7 +1324,7 @@ class SQLNestedQuery(SQLQuery):
   
 
 class SQLRecursivePreliminaryQuery(SQLQuery):
-  def __init__(self, name, triple, fixed, fixed_var):
+  def __init__(self, name, triple, fixed, fixed_var, is_delete = False):
     s, p, o = triple
     translator = CURRENT_TRANSLATOR.get()
     self.fixed        = fixed
@@ -1333,7 +1337,7 @@ class SQLRecursivePreliminaryQuery(SQLQuery):
     self.need_orig    = not self.fixed_var is None # XXX Optimizable
     self.need_nb      = p.modifier != "*"
     
-    SQLQuery.__init__(self, "%s_%s" % (name, "quads2" if self.need_d else "objs"))
+    SQLQuery.__init__(self, "%s_%s" % (name, "quads2" if self.need_d else "objs"), is_delete = is_delete)
     self.recursive    = True
     self.preliminary  = True
     
@@ -1402,11 +1406,12 @@ SELECT q.%s%s%s%s%s FROM %s q, %s rec WHERE %s %sAND q.%s=rec.%s""" % (
       
 class SQLStaticValuesPreliminaryQuery(object):
   recursive = False
-  def __init__(self, translator, name, static_values):
+  def __init__(self, translator, name, static_values, is_delete = False):
     self.translator    = translator
     self.name          = name
     self.static_values = static_values
     self.has_select    = True
+    self.is_delete     = is_delete
     
     if self.static_values.valuess:
       self.nb_value = len(self.static_values.valuess[0])

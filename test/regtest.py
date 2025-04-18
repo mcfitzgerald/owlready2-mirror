@@ -11095,7 +11095,36 @@ SELECT DISTINCT ?c {
     
     assert { tuple(x) for x in r } == { (c1,), (d1,), (d2,) }
     
+  def test_177(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class i(C >> int): pass
+      class p(C >> Thing): pass
+      c1 = C(i = [3])
+      c2 = C(i = [1, 2], p = [c1])
+      c3 = C(i = [4], p = [c2, c1])
+      
+    world.sparql("""
+DELETE {
+  ?x ?p1 ?o .
+  ?s ?p2 ?x .
+}
+WHERE {
+  ?x onto:i 1 .
+}""")
     
+    assert c3.p == [c1]
+    
+    del c3.p
+    assert c3.p == [c1]
+    
+    world._entities.clear()
+    
+    assert onto.c2 is None
+    
+      
 # Add test for Pellet
 for Class in [Test, Paper]:
   if Class:

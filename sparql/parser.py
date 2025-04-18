@@ -339,7 +339,8 @@ def _create_modify_query(ontology_iri, deletes, inserts, using, group_graph_patt
   
   if isinstance(group_graph_pattern, NotExistsBlock): # FILTER NOT EXISTS alone; not supported as the main query.
     group_graph_pattern = SimpleTripleBlock([group_graph_pattern])
-  main_query = translator.new_sql_query("main", group_graph_pattern, selects, None, solution_modifier)
+    
+  main_query = translator.new_sql_query("main", group_graph_pattern, selects, None, solution_modifier, is_delete = bool(deletes))
   main_query.type                 = "modify"
   main_query.ontology_iri         = ontology_iri
   main_query.inserts              = inserts

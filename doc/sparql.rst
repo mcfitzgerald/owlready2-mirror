@@ -200,7 +200,7 @@ The following example shows how to create OWL construct like restrictions with a
 DELETE queries
 --------------
 
-DELETE queries are supported; they do not need to specify the ontology from which RDF triples are deleted.
+DELETE queries are supported; contrary to INSERT queries, they do not need to specify the ontology from which RDF triples are deleted.
 
 ::
    

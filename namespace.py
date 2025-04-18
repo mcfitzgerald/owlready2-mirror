@@ -504,24 +504,28 @@ class World(_GraphManager):
     return (NamespaceClass or Namespace)(self, base_iri, name or base_iri[:-1].rsplit("/", 1)[-1])
     
   def _del_triple_with_update(self, s, p, o, d = None):
-    sub = None
     if d == 'o': d = None # For SPARQL engine, because None is NULL in SQL, but '=' cannot be used on NULL
     
-    if   (s > 0) and (s in self.world._entities):
-      sub = self._entities[s]
-    elif  s < 0:
+    if    s is None:
+      storids = { s for s, p, o, d in self._get_triples_spod_spod(None, p, o, d) }
+      subs = [self.world._entities[s] for s in storids if s in self._entities]
+    elif s > 0:
+      if s in self._entities: subs = [self._entities[s]]
+      else:                   subs = []
+    elif s < 0:
       for ontology in self.ontologies.values():
         if s in ontology._bnodes:
-          sub = ontology._bnodes[s]
+          subs = [ontology._bnodes[s]]
           break
+      else: subs = []
         
-    if not sub is None:
+    for sub in subs:
       prop = self._entities.get(p)
       if   prop:
         try: delattr(sub, prop.python_name)
         except: pass
         
-      elif d is None:
+      elif o and (d is None):
         obj = self._load_by_storid(o)
         if not obj is None:
           if (p == rdf_type) or (p == rdfs_subclassof) or (p == rdfs_subpropertyof):
@@ -544,9 +548,13 @@ class World(_GraphManager):
             sub.range.remove(obj)
             return
           
-    if d is None: self._del_obj_triple_raw_spo  (s,p,o)
-    else:         self._del_data_triple_raw_spod(s,p,o,d)
-    
+    if p is None:
+      self._del_obj_triple_raw_spo  (s,p,o)
+      self._del_data_triple_raw_spod(s,p,o,d)
+    else:
+      if d is None: self._del_obj_triple_raw_spo  (s,p,o)
+      else:         self._del_data_triple_raw_spod(s,p,o,d)
+      
   def _add_quads_with_update(self, ontology0, quads):
     l = owlready2.namespace.CURRENT_NAMESPACES.get()
     if l:

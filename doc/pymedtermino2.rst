@@ -435,3 +435,15 @@ In addition, the Concepts class also provides advanced terminology-oriented meth
 * is_semantic_disjoint(other) returns True if all concepts in this set are semantically disjoint from all concepts in the 'other' set
 * semantic_intersection(other) returns the intersection of the set with 'other', considering is-a relations between the concepts in the sets
 * remove_entire_families(only_family_with_more_than_one_child = True) replaces concepts in the set by their parents, whenever all the children of the parent are present
+
+
+Pruning terminologies
+*********************
+
+The owlready2.pymedtermino2.umls.prune() function can be used to prune terminologies to the descendants of the given concepts.
+
+For example, if you want to keep only the first two chapters of ICD10 (named "E00-E90.9" and "K00-K93.9"):
+
+>>> prune(default_world, "ICD10", ["E00-E90.9", "K00-K93.9"])
+
+This is particularly usefull for huge terminologies like SNOMEDCT.

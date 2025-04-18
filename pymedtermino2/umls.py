@@ -498,14 +498,14 @@ def finalize(PYM, importer):
     
 class _Importer(object):
   def __init__(self, PYM, terminologies, langs, extract_groups, extract_attributes, extract_relations, extract_definitions, remove_suppressed):
-    self.PYM          = PYM
+    self.PYM           = PYM
     self.terminologies = terminologies
     self.langs         = langs
-    self.extract_groups      = extract_groups
-    self.extract_attributes  = extract_attributes
-    self.extract_relations   = extract_relations
-    self.extract_definitions = extract_definitions
-    self.remove_suppressed   = remove_suppressed
+    self.extract_groups          = extract_groups
+    self.extract_attributes      = extract_attributes
+    self.extract_relations       = extract_relations
+    self.extract_definitions     = extract_definitions
+    self.remove_suppressed       = remove_suppressed
     
     self.tty_2_priority = defaultdict(int)
     self.created_terminologies = set()
@@ -757,3 +757,46 @@ def import_umls(umls_zip_filename, terminologies = None, langs = None, fts_index
   import owlready2.pymedtermino2.model
   default_world.save()
   return PYM
+
+def prune(PYM, termino, restrict_to_descendants, call_vacuum = True):
+  if isinstance(termino, str): termino = PYM[termino]
+  
+  sparql = """
+SELECT (STORID(?t) AS ?storid) {
+  ?t PYM:terminology <%s> .""" % termino.iri
+  
+  for name in restrict_to_descendants:
+    sparql += """
+  FILTER NOT EXISTS {
+    ?t rdfs:subClassOf* <http://PYM/%s/%s> .
+  }""" % (termino.name, name)
+    
+  sparql += """\n}"""
+  
+  storids = list(PYM.world.sparql(sparql))
+  
+  
+  sparql = """
+DELETE {
+  ?t ?p1 ?o .
+  ?s ?p2 ?t .
+}
+WHERE {
+  ?t PYM:terminology <%s> .""" % termino.iri
+  
+  for name in restrict_to_descendants:
+    sparql += """
+  FILTER NOT EXISTS {
+    ?t rdfs:subClassOf* <http://PYM/%s/%s> .
+  }""" % (termino.name, name)
+    
+  sparql += """\n}"""
+  
+  PYM.world.sparql(sparql)
+  
+  
+  PYM.world.graph.db.executemany("DELETE FROM resources WHERE storid=?", storids)
+
+  if call_vacuum:
+    PYM.world.save()
+    PYM.world.graph.execute("VACUUM")
