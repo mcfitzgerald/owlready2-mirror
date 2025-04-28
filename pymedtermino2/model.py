@@ -280,6 +280,18 @@ class MetaConcept(ThingClass):
     if r: return r
     return Concepts( i for parent in Class.parents for i in parent._map(mapper) )
 
+  def create_term(self, onto, name, parents, labels):
+    with onto.get_namespace("http://PYM/SRC/%s/" % self.name):
+      storid = self.namespace.world._abbreviate("http://PYM/SRC/%s/%s" % (self.name, name))
+      onto._add_obj_triple_spo(storid, rdf_type, owl_class)
+      for p in parents:
+        onto._add_obj_triple_spo(storid, rdfs_subclassof, p.storid)
+      onto._add_obj_triple_spo(storid, PYM.terminology.storid, self.storid)
+      if isinstance(labels, str): labels = [labels]
+      for l in labels:
+        onto._add_data_triple_spod(storid, label.storid, *self.namespace.world._to_rdf(l))
+    return self.namespace.world._get_by_storid(storid)
+    
 
 class MetaGroup(ThingClass):
   def __new__(MetaClass, name, superclasses, obj_dict):
@@ -311,6 +323,17 @@ class PYMOntology(Ontology):
   
   def get_terminology(self, name): return self._src["%s" % name]
   __getitem__ = get_terminology
+  
+  def create_terminology(self, onto, name, labels):
+    with onto.get_namespace("http://PYM/SRC/"):
+      storid = self.world._abbreviate("http://PYM/SRC/%s" % name)
+      onto._add_obj_triple_spo(storid, rdf_type, owl_class)
+      onto._add_obj_triple_spo(storid, rdfs_subclassof, PYM["SRC"].storid)
+      onto._add_obj_triple_spo(storid, PYM.terminology.storid, PYM["SRC"].storid)
+      if isinstance(labels, str): labels = [labels]
+      for l in labels:
+        onto._add_data_triple_spod(storid, label.storid, *self.world._to_rdf(l))
+    return self.world._get_by_storid(storid)
   
   def search(self, keywords):
     keywords = FTS(keywords)

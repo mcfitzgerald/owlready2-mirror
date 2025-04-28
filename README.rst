@@ -796,6 +796,7 @@ version 2 - 0.48
 * Improve DELETE SPARQL queries in order to delete IRI/storid of entirely deleted entities
 * Add support for SNOMED CT French translation in PyMedTermino2
 * Add function owlready2.pymedtermino2.umls.prune() to prune terminologies to the descendants of the given concepts
+* Add add_terminology() and add_term() methods in owlready2.pymedtermino2
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed
