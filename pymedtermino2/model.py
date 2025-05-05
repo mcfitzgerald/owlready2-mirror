@@ -281,8 +281,8 @@ class MetaConcept(ThingClass):
     return Concepts( i for parent in Class.parents for i in parent._map(mapper) )
 
   def create_term(self, onto, name, parents, labels):
-    with onto.get_namespace("http://PYM/SRC/%s/" % self.name):
-      storid = self.namespace.world._abbreviate("http://PYM/SRC/%s/%s" % (self.name, name))
+    with onto.get_namespace("http://PYM/%s/" % self.name):
+      storid = self.namespace.world._abbreviate("http://PYM/%s/%s" % (self.name, name))
       onto._add_obj_triple_spo(storid, rdf_type, owl_class)
       for p in parents:
         onto._add_obj_triple_spo(storid, rdfs_subclassof, p.storid)
