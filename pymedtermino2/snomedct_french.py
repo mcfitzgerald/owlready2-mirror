@@ -33,19 +33,21 @@ def import_snomedct_french(snomedct_owl_filename, include_synonyms = True):
   
   with open(snomedct_owl_filename) as f:
     for l in f.readlines():
-      l = l.strip(" .,;\n")
+      l = l.strip(".,;\n")
       if   l.startswith("<http://snomed.info/id/"):
         current = l[23:].split(">", 1)[0]
-      elif l.startswith("rdfs:label"):
-        l = l.split(None, 1)[1]
-        in_label = True
-        in_syno  = False
-      elif l.startswith("skos:altLabel"):
-        l = l.split(None, 1)[1]
-        in_label = False
-        in_syno  = True
-      elif not l.startswith('"'):
-        in_label = in_syno = False
+      else:
+        l = l.strip()
+        if   l.startswith("rdfs:label"):
+          l = l.split(None, 1)[1]
+          in_label = True
+          in_syno  = False
+        elif l.startswith("skos:altLabel"):
+          l = l.split(None, 1)[1]
+          in_label = False
+          in_syno  = True
+        elif not l.startswith('"'):
+          in_label = in_syno = False
         
       if (in_label or in_syno) and l.startswith('"') and l.endswith("@fr"):
         l = l[1:-4]
