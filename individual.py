@@ -429,7 +429,7 @@ class FusionClass(ThingClass):
     Classes0 = tuple(sorted(Classes0, key = lambda Class: Class.__name__))
     Class = Classes0[0].namespace.world._fusion_class_cache.get(Classes0)
     if Class: return Class
-
+    
     try:
       Classes = _keep_most_specific(Classes0, consider_equivalence = True) # May crash if one of the class has a one-of construct with an individual which belong to the sae fusion class!
       fusion_class = FusionClass._create_fusion_class(Classes0, Classes)
@@ -460,8 +460,9 @@ class FusionClass(ThingClass):
       try:
         fusion_class = FusionClass(name, Classes, { "namespace" : anonymous })
       except TypeError:
-        fusion_class = ThingClass(name, Classes, { "namespace" : anonymous })
-        
+        fusion_class = ThingClass(name, Classes, { "namespace" : anonymous, "_is_fusion_class" : True })
+        if len(fusion_class.__bases__) != len(Classes): # May differ sometimes!!!
+          fusion_class.__bases__ = Classes
     Classes0[0].namespace.world._fusion_class_cache[Classes0] = Classes0[0].namespace.world._fusion_class_cache[Classes] = fusion_class
     return fusion_class
   
