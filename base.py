@@ -308,7 +308,7 @@ owl_bottomdataproperty       = _universal_abbrev("http://www.w3.org/2002/07/owl#
 owl_disjointunion            = _universal_abbrev("http://www.w3.org/2002/07/owl#disjointUnionOf")
 
 #owlready_direct_is_a         = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#direct_is_a")
-#owlready_is_a_construct         = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#is_a_construct")
+#owlready_is_a_construct      = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#is_a_construct")
 #owlready_context_is_a        = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#context_is_a")
 owlready_concrete            = _universal_abbrev("http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#concrete")
 
