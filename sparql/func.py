@@ -299,7 +299,6 @@ class FuncSupport(object):
                     if condition.startswith("%s.p=" % table.name):
                       try:    fts_p = int(condition.split("=")[1])
                       except: continue
-                      fts_s = "%s.s" % table.name
                       break
                   else: continue
                   break
@@ -329,7 +328,8 @@ SELECT DISTINCT ?x {
               var_bm25.fixed_datatype = 43
               var_bm25.bindings.append("bm25(fts_%s)" % fts_p)
               
-            return "(%s.s=%s) AND (%s.o MATCH %s)" % (fts_table.name, fts_s, fts_table.name, query)
+            #return "(%s.s=%s) AND (%s.o MATCH %s)" % (fts_table.name, "%s.s" % table.name, fts_table.name, query)
+            return "(%s.s=%s) AND (%s.o=%s) AND (%s.o MATCH %s)" % (fts_table.name, "%s.s" % table.name, fts_table.name, "%s.o" % table.name, fts_table.name, query)
           
           elif func == "STRSTARTS":
             x     = self.parse_expression(expression[2][0])

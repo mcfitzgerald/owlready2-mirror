@@ -274,7 +274,8 @@ class Translator(object):
 
 from owlready2.sparql import _default_spawn
 
-def _list_2_json(l): return "[%s]" % (",".join(str(i.storid) if hasattr(i, "storid") else repr(i) for i in l))
+def _list_2_json(l):
+  return "[%s]" % (",".join(str(i.storid) if hasattr(i, "storid") else repr(i) for i in l))
 
 
 class PreparedQuery(object):

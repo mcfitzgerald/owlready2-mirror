@@ -799,6 +799,7 @@ version 2 - 0.48
 * Add support for SNOMED CT French translation in PyMedTermino2
 * Add function owlready2.pymedtermino2.umls.prune() to prune terminologies to the descendants of the given concepts
 * Add add_terminology() and add_term() methods in owlready2.pymedtermino2
+* Add owlready2.pymedtermino2.model.TerminologySearcher for fast search in terminologies
 * Bugfixes:
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed

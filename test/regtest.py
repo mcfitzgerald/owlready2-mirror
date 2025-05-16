@@ -11262,6 +11262,59 @@ SELECT ?x {
     r = list(q.execute([[C2]]))
     assert { i for i, in r } == { c2 }
 
+  def test_183(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class terminology(Thing >> Thing): pass
+      class C1(C): label = [locstr("Muscle pain", "en")]
+      class C2(C): label = [locstr("Muscular pain", "en"), locstr("Douleur musculaire", "fr")]
+      class C3(C): label = [locstr("Back pain", "en")]
+    with onto.get_namespace("http://PYM/"):
+      class synonyms(AnnotationProperty): pass
+    world.full_text_search_properties.append(label)
+    world.full_text_search_properties.append(synonyms)
+    
+    from owlready2.pymedtermino2.model import TerminologySearcher
+    t = TerminologySearcher([C])
+    r = t.search("musc* pain")
+    assert set(r) == { C1, C2 }
+    r = t.search("muscle pain")
+    assert set(r) == { C1 }
+    
+    r = t.autocompletion("musc pain")
+    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    r = t.autocompletion("muscle pain")
+    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
+    
+    r = t.search("douleur", )
+    assert set(r) == { C2 }
+    r = t.search("douleur", langs = ["fr"])
+    assert set(r) == { C2 }
+    r = t.search("douleur", langs = ["en"])
+    assert set(r) == set()
+    
+    r = t.autocompletion("douleur")
+    assert set(r) == set()
+    r = t.autocompletion("douleur", "fr")
+    assert set(r) == { ('http://test.org/onto.owl#C2', 'Douleur musculaire') }
+    r = t.autocompletion("douleur", "en", None)
+    assert set(r) == { ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    
+    t = TerminologySearcher([], world = world)
+    r = t.search("musc* pain")
+    assert set(r) == { C1, C2 }
+    r = t.search("muscle pain")
+    assert set(r) == { C1 }
+    
+    r = t.autocompletion("musc pain")
+    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    r = t.autocompletion("muscle pain")
+    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
+    
+
+
 
 
     
