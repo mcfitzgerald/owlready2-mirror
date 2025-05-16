@@ -24,7 +24,6 @@ from owlready2 import *
 from owlready2.triplelite import _SearchList
 
 
-
 class Concepts(set):
   """A set of concepts. The set can contain each concept only once, and it
 inherits from Python's :class:`set` the methods for computing intersection, union, difference, ..., of two sets.
@@ -316,7 +315,9 @@ class PYMOntology(Ontology):
       type.__setattr__(Concept, "__parents" , [])
       
       class Group(Thing, metaclass = MetaGroup): pass
-
+      
+    import owlready2.sparql.parser
+    owlready2.sparql.parser._DATA_PROPS.add(self.synonyms.storid)
     return self
 
   def __init__(self, world): pass
@@ -524,7 +525,84 @@ def _create_icd10_2_icd10_french_atih_mapper(dest):
       elif code == "O95-O99.9": yield dest["O94-O99"]
   return _icd10_2_icd10_french_atih_mapper
 
+
+class TerminologySearcher(object):
+  def __init__(self, ancestors, props = ["rdfs:label", "pym:synonyms"], ordering = "bm25", world = None, lang = None):
+    if not isinstance(ancestors, list): ancestors = [ancestors]
+    self.world    = world or default_world
+    terminologies = { i.terminology for i in ancestors }
+    ancestors     = set(ancestors) - terminologies
     
+    sparql = """
+SELECT DISTINCT (STORID(?x) AS ?r) (STR(?x) AS ?name) {"""
+    blocks = []
+    for terminology in terminologies:
+      for prop in props:
+        blocks.append("""
+    ?x pym:terminology <%s> .
+    ?x %s ?label .
+    FILTER(FTS(?label, ??1, ?bm25)) .
+""" % (terminology.iri, prop))
+    if len(blocks) == 1:
+      sparql += blocks[0]
+    else:
+      sparql += """\n  {"""
+      sparql += "  } UNION {\n".join(blocks)
+      sparql += """\n  }"""
+      
+    sparql += """\n}"""
+    if   ordering == "bm25": sparql += """\nORDER BY ?bm25"""
+    elif ordering == "len":  sparql += """\nORDER BY STRLEN(?label)"""
+    print(sparql)
+    self.q1 = quadstore_extraction.prepare_sparql(sparql)
+    
+    if ancestors:
+      self.q2 = quadstore_extraction.prepare_sparql("""
+SELECT (STORID(?ancestor) AS ?r) {
+  ?? rdfs:subClassOf* ?ancestor .
+  FILTER((%s))
+} LIMIT 1
+""" % ") || (". join("?ancestor = %s" % ancestor.storid for ancestor in ancestors))
+    else:
+      self.q2 = None
+      
+    self.q3 = quadstore_extraction.prepare_sparql("""
+SELECT (STR(COALESCE(?label, ?label_en)) AS ?label_str) {
+  ??1 rdfs:label ?label_en .
+  FILTER(LANG(?label_en) = "en") .
+  OPTIONAL {
+  ??1 rdfs:label ?label .
+  FILTER(LANG(?label) = ??2) .
+  }
+} LIMIT 1
+""")
+    
+  def search_storid(self, label):
+    r0 = list(self.q1.execute([FTS(label)]))
+    return [storid for storid, name in r0 if list(self.q2.execute((storid,)))]
+  
+  def search(self, label):
+    r0 = list(self.q1.execute([FTS(label)]))
+    r  = []
+    for storid, name in r0:
+      if list(self.q2.execute((storid,))):
+        r_label = list(self.q3.execute((storid, lang)))
+        if r_label:
+          r.append((name, r_label[0][0]))
+    return r
+  
+  def autocompletion(self, label, lang = "en"):
+    if len(label) < 3: return []
+    r0 = list(self.q1.execute([FTS(" ".join("%s*" % i for i in label.split()))]))
+    r  = []
+    for storid, name in r0:
+      if list(self.q2.execute((storid,))):
+        r_label = list(self.q3.execute((storid, lang)))
+        if r_label:
+          r.append((name, r_label[0][0]))
+    return r
+    
+  
     
       
 _CUI = PYM["CUI"]

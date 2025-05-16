@@ -11211,9 +11211,60 @@ SELECT ?c ?bm25 {
     q, r = self.sparql(world, sparql, compare_with_rdflib = False)
     assert { i[0] for i in r } == { c1, c2 }
 
+  def test_181(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class C2(C): pass
+      class C3(C2): pass
+      class D(Thing): pass
+    
+    sparql = """
+SELECT ?x {
+  onto:C3 a ?x .
+  onto:C3 rdfs:subClassOf* onto:C .
+}
+"""
+    q, r = self.sparql(world, sparql, compare_with_rdflib = False)
+
+  def test_182(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      class C2(C): pass
+      c1 = C(label = ["Muscle pain"])
+      c2 = C2(label = ["Muscular' pain"])
+      c3 = C(label = ["Back pain"])
+    
+    sparql = """
+SELECT ?x {
+  ?x rdfs:label ?label .
+  FILTER(?label IN ??)
+}
+"""
+    q = world.prepare_sparql(sparql)
+    r = list(q.execute([["Muscle pain", "Muscular' pain"]]))
+    assert { i for i, in r } == { c1, c2 }
+    r = list(q.execute([["Muscle pain"]]))
+    assert { i for i, in r } == { c1 }
+    
+    sparql = """
+SELECT ?x {
+  ?x a ?c .
+  FILTER(?c IN ??)
+}
+"""
+    q = world.prepare_sparql(sparql)
+    r = list(q.execute([[C, C2]]))
+    assert { i for i, in r } == { c1, c2, c3 }
+    r = list(q.execute([[C2]]))
+    assert { i for i, in r } == { c2 }
+
+
 
     
-      
 # Add test for Pellet
 for Class in [Test, Paper]:
   if Class:

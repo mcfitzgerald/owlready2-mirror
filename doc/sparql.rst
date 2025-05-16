@@ -256,6 +256,19 @@ multiple times in the query.
     [obo.GO_0071840], [obo.GO_0051641], [obo.GO_0008150],
     [obo.GO_0051179]]
 
+    
+Finally, Owlready also accepts lists as parameter values, when the parameter is used with the 'IN' (or 'NOT IN') operator, e.g.:
+
+::
+   
+   >>> q = world.prepare_sparql("""
+   SELECT ?x {
+       ?x rdfs:label ?label .
+       FILTER(?label IN ??)
+   }
+   """)
+   >>> list(q.execute([["label1", "label2"]]))
+   
 
 Non-standard additions to SPARQL
 --------------------------------

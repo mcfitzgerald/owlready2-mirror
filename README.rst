@@ -791,6 +791,7 @@ version 2 - 0.48
 ****************
 
 * Add support for Full Text Search (FTS) in SPARQL (see FTS() SPARQL function)
+* Accept list as parameter in SPARQL queries when using the IN operator
 * Faster ontology loading (espescially when having a lot of small ontologies)
 * Make prepared SPARQL queries picklable
 * Support DELETE SPARQL queries with free variables in the DELETE part

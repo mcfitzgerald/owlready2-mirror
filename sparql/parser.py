@@ -846,6 +846,9 @@ def f(p): return p[0]
 @pg.production("relational_expression : numeric_expression LIST_COMPARATOR expression_list")
 def f(p): return p
 
+@pg.production("relational_expression : numeric_expression LIST_COMPARATOR param")
+def f(p): return p
+
 #@pg.production("numeric_expression_operand : + multiplicative_expression multiplicative_expression_operand*")
 #@pg.production("numeric_expression_operand : - multiplicative_expression multiplicative_expression_operand*")
 #@pg.production("numeric_expression_operand : numeric_literal multiplicative_expression_operand*") # Probably an error in SPARQL grammar? This allows '2 * 2 2', but how is it suposed to be interpreted?

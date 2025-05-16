@@ -456,7 +456,11 @@ SELECT DISTINCT ?x {
           return "%s ASC" % self.parse_expression(expression[1][1])
         elif isinstance(expression[0], rply.Token) and expression[0].name == "DESC":
           return "%s DESC" % self.parse_expression(expression[1][1])
-          
+        
+        elif (len(expression) == 3) and isinstance(expression[1], rply.Token) and (expression[1].name == "LIST_COMPARATOR")and isinstance(expression[2], rply.Token) and (expression[2].name == "PARAM"):
+          # IN with a parameter value, e.g. "IN ??"
+          return "%s IN (SELECT value FROM json_each(%s))" % (self.parse_expression(expression[0]), self.parse_expression(expression[2]))
+        
         return "".join(self.parse_expression(i) for i in expression) 
     elif expression is None: pass
     elif expression.name  == "VAR":
@@ -465,6 +469,7 @@ SELECT DISTINCT ?x {
     elif expression.name  == "PARAM":  return "?%s" % expression.number
     elif expression.value == "(":      return "("
     elif expression.value == ")":      return ")"
+      
     else:                              return " %s" % expression.value
     return ""
   

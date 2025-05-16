@@ -31,7 +31,7 @@ class Translator(object):
   def __init__(self, world, error_on_undefined_entities = True):
     self.world                         = world
     self.error_on_undefined_entities   = error_on_undefined_entities
-    self.prefixes                      = { "rdf:" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdfs:" : "http://www.w3.org/2000/01/rdf-schema#", "owl:" : "http://www.w3.org/2002/07/owl#", "xsd:" : "http://www.w3.org/2001/XMLSchema#", "obo:" : "http://purl.obolibrary.org/obo/", "owlready:" : "http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#" }
+    self.prefixes                      = { "rdf:" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdfs:" : "http://www.w3.org/2000/01/rdf-schema#", "owl:" : "http://www.w3.org/2002/07/owl#", "xsd:" : "http://www.w3.org/2001/XMLSchema#", "obo:" : "http://purl.obolibrary.org/obo/", "owlready:" : "http://www.lesfleursdunormal.fr/static/_downloads/owlready_ontology.owl#", "pym:" : "http://PYM/" }
     self.base_iri                      = ""
     self.current_anonynous_var         = 0
     self.current_parameter             = 0
@@ -274,6 +274,9 @@ class Translator(object):
 
 from owlready2.sparql import _default_spawn
 
+def _list_2_json(l): return "[%s]" % (",".join(str(i.storid) if hasattr(i, "storid") else repr(i) for i in l))
+
+
 class PreparedQuery(object):
   def __init__(self, world, sql, column_names, column_types, nb_parameter, parameter_datatypes):
     self.world               = world
@@ -285,7 +288,7 @@ class PreparedQuery(object):
     
   def execute_raw(self, params = (), spawn = False):
     self.world._nb_sparql_call += 1
-    sql_params = [self.world._to_rdf(param)[0] for param in params]
+    sql_params = [_list_2_json(param) if isinstance(param, list) else self.world._to_rdf(param)[0] for param in params]
     for i in self.parameter_datatypes: sql_params.append(self.world._to_rdf(params[i])[1])
     if spawn:
       if spawn is True: spawn = _default_spawn
