@@ -175,6 +175,7 @@ _universal_abbrev_datatype(datetime.date,
 _universal_abbrev_datatype(datetime.time,
                            lambda s: datetime.datetime.strptime(s, "%H:%M:%S").time(),
                            datetime.time.isoformat, "http://www.w3.org/2001/XMLSchema#time")
+_universal_datatype_2_abbrev_unparser[FTS] = _universal_datatype_2_abbrev_unparser[str]
 
 def _parse_duration(s):
   assert s.startswith("P")

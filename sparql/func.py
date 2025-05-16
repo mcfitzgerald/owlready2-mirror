@@ -318,7 +318,10 @@ SELECT DISTINCT ?x {
             from owlready2.sparql.main import Table
             fts_table = Table(self, "fts%s" % self.translator.next_table_id, "fts_%s" % fts_p)
             self.translator.next_table_id += 1
-            query = self.parse_expression(expression[2][2]).strip()[1:-1]
+            query = self.parse_expression(expression[2][2]).strip()
+            if query and (query.startswith("'") or query.startswith('"')): query = repr(FTS(query[1:-1]))
+            print(query)
+            print(expression[2][2])
             
             if len(expression[2]) >= 5:
               var_bm25 = expression[2][4]
@@ -328,7 +331,7 @@ SELECT DISTINCT ?x {
               var_bm25.fixed_datatype = 43
               var_bm25.bindings.append("bm25(fts_%s)" % fts_p)
               
-            return "(%s.s=%s) AND (%s.o MATCH %r)" % (fts_table.name, fts_s, fts_table.name, FTS(query))
+            return "(%s.s=%s) AND (%s.o MATCH %s)" % (fts_table.name, fts_s, fts_table.name, query)
           
           elif func == "STRSTARTS":
             x     = self.parse_expression(expression[2][0])
