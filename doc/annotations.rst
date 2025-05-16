@@ -287,3 +287,44 @@ When using full-text search, the _bm25 argument can be used to obtain the BM25 r
 ::
 
    >>> default_world.search(label = FTS("keyword1 keyword2*"), _bm25 = True)
+
+
+FTS can also be used inside SPARQL queries. The following example searches for "musc* pain", matching both "muscle pain" and "muscular pain":
+
+::
+   
+   >>> default_world.sparql("""
+   SELECT DISTINCT ?x {
+       ?x rdfs:label ?label .
+       FILTER(FTS(?label, "musc* pain")) .
+   }
+   """)
+   
+The FTS() SPARQL function can also take an optional third argument, the BM25 relevance score. For example:
+
+::
+   
+   >>> default_world.sparql("""
+   SELECT DISTINCT ?x ?bm25 {
+       ?x rdfs:label ?label .
+       FILTER(FTS(?label, "musc* pain", ?bm25)) .
+   }
+   ORDER BY ?bm25
+   """)
+   
+Notice that, if FTS() is used inside blocks such as UNION, you need to repeat the triple that defines the variable used as first argument to FTS(), e.g.:
+
+::
+   
+   >>> default_world.sparql("""
+   SELECT DISTINCT ?x {
+       {
+           ?x rdfs:label ?label .
+           FILTER(FTS(?label, "chronic back pain")) .
+       } UNION {
+           ?x rdfs:label ?label .
+           FILTER(FTS(?label, "low back pain")) .
+       }
+   }
+   """)
+

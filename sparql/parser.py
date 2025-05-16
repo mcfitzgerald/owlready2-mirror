@@ -59,7 +59,7 @@ lg.add("?",                    r"""\?""")
 lg.add(".",                    r"""\.""")
 lg.add("PREFIXED_NAME",        r"""[\w\.\-]*:([\w\.\-:]|%[0-9a-fA-F]{2}|\\[_~\.\-!$&"'()*+,;=/?#@%])*([\w\-:]|%[0-9a-fA-F]{2}|\\[_~\.\-!$&"'()*+,;=/?#@%])""")
 lg.add("PNAME_NS",             r"""[\w\.\-]*:""")
-lg.add("FUNC",                 r"""(?:STRLANG)|(?:STRDT)|(?:STRLEN)|(?:STRSTARTS)|(?:STRENDS)|(?:STRBEFORE)|(?:STRAFTER)|(?:LANGMATCHES)|(?:LANG)|(?:DATATYPE)|(?:BOUND)|(?:IRI)|(?:URI)|(?:BNODE)|(?:RAND)|(?:ABS)|(?:CEIL)|(?:FLOOR)|(?:ROUND)|(?:CONCAT)|(?:STR)|(?:UCASE)|(?:LCASE)|(?:ENCODE_FOR_URI)|(?:CONTAINS)|(?:YEAR)|(?:MONTH)|(?:DAY)|(?:HOURS)|(?:MINUTES)|(?:SECONDS)|(?:TIMEZONE)|(?:TZ)|(?:NOW)|(?:UUID)|(?:STRUUID)|(?:MD5)|(?:SHA1)|(?:SHA256)|(?:SHA384)|(?:SHA512)|(?:COALESCE)|(?:IF)|(?:sameTerm)|(?:isIRI)|(?:isURI)|(?:isBLANK)|(?:isLITERAL)|(?:isNUMERIC)|(?:REGEX)|(?:SUBSTR)|(?:REPLACE)|(?:SIMPLEREPLACE)|(?:NEWINSTANCEIRI)|(?:LOADED)|(?:STORID)|(?:DATETIME_DIFF)|(?:DATETIME_ADD)|(?:DATETIME_SUB)|(?:DATETIME)|(?:DATE_ADD)|(?:DATE_DIFF)|(?:DATE_SUB)|(?:DATE)|(?:TIME)|(?:LIKE)\b""", re.IGNORECASE)
+lg.add("FUNC",                 r"""(?:STRLANG)|(?:STRDT)|(?:STRLEN)|(?:STRSTARTS)|(?:STRENDS)|(?:STRBEFORE)|(?:STRAFTER)|(?:LANGMATCHES)|(?:LANG)|(?:DATATYPE)|(?:BOUND)|(?:IRI)|(?:URI)|(?:BNODE)|(?:RAND)|(?:ABS)|(?:CEIL)|(?:FLOOR)|(?:ROUND)|(?:CONCAT)|(?:STR)|(?:UCASE)|(?:LCASE)|(?:ENCODE_FOR_URI)|(?:CONTAINS)|(?:YEAR)|(?:MONTH)|(?:DAY)|(?:HOURS)|(?:MINUTES)|(?:SECONDS)|(?:TIMEZONE)|(?:TZ)|(?:NOW)|(?:UUID)|(?:STRUUID)|(?:MD5)|(?:SHA1)|(?:SHA256)|(?:SHA384)|(?:SHA512)|(?:COALESCE)|(?:IF)|(?:sameTerm)|(?:isIRI)|(?:isURI)|(?:isBLANK)|(?:isLITERAL)|(?:isNUMERIC)|(?:REGEX)|(?:SUBSTR)|(?:REPLACE)|(?:SIMPLEREPLACE)|(?:NEWINSTANCEIRI)|(?:LOADED)|(?:STORID)|(?:DATETIME_DIFF)|(?:DATETIME_ADD)|(?:DATETIME_SUB)|(?:DATETIME)|(?:DATE_ADD)|(?:DATE_DIFF)|(?:DATE_SUB)|(?:DATE)|(?:TIME)|(?:LIKE)|(?:FTS)\b""", re.IGNORECASE)
 lg.add("MINUS",                r"""MINUS\b""", re.IGNORECASE)
 lg.add("AGGREGATE_FUNC",       r"""(?:COUNT)|(?:SUM)|(?:MIN)|(?:MAX)|(?:AVG)|(?:SAMPLE)|(?:GROUP_CONCAT)\b""", re.IGNORECASE)
 lg.add("BASE",                 r"""BASE\b""", re.IGNORECASE)
@@ -138,7 +138,7 @@ def _parse_select_query(p):
     p[4] = SimpleTripleBlock([p[4]])
   if isinstance(p[4], NotExistsBlock): # FILTER NOT EXISTS alone; not supported as the main query.
     p[4] = SimpleTripleBlock([p[4]])
-  main_query = translator.new_sql_query("main", p[4], p[2], p[1], p[5])
+  main_query = translator.new_sql_query("main", None, p[4], p[2], p[1], p[5])
   main_query.type = "select"
   return main_query
 
@@ -340,7 +340,7 @@ def _create_modify_query(ontology_iri, deletes, inserts, using, group_graph_patt
   if isinstance(group_graph_pattern, NotExistsBlock): # FILTER NOT EXISTS alone; not supported as the main query.
     group_graph_pattern = SimpleTripleBlock([group_graph_pattern])
     
-  main_query = translator.new_sql_query("main", group_graph_pattern, selects, None, solution_modifier, is_delete = bool(deletes))
+  main_query = translator.new_sql_query("main", None, group_graph_pattern, selects, None, solution_modifier, is_delete = bool(deletes))
   main_query.type                 = "modify"
   main_query.ontology_iri         = ontology_iri
   main_query.inserts              = inserts
@@ -1261,7 +1261,7 @@ class SimpleUnion(SpecialCondition):
   inversed = False
   def __init__(self, items):
     self.items = items
-
+    
   def create_conditions(self, conditions, table, n):
     conditions.append("%s.%s IN (%s)" % (table.name, n, ",".join(str(p.storid) for p in self.items)))
 
@@ -1355,7 +1355,7 @@ class StaticBlock(StaticValues):
     self.translator = self.old_translator.make_translator()
     CURRENT_TRANSLATOR.set(self.translator)
     
-    self.translator.main_query = self.translator.new_sql_query("main", self.inner_blocks, None, True)
+    self.translator.main_query = self.translator.new_sql_query("main", None, self.inner_blocks, None, True)
     
     self.translator.main_query.type = "select"
     CURRENT_TRANSLATOR.set(self.old_translator)

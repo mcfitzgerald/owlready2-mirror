@@ -11170,11 +11170,48 @@ WHERE {
 
     c2.i
     del c2.i
-    print(c2.i)
     
     assert nb == 1
     assert c2.i == []
     
+  def test_180(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): pass
+      c1 = C(label = ["Muscle pain"])
+      c2 = C(label = ["Muscular pain in the shoulder"])
+      c3 = C(label = ["Back pain"])
+    world.full_text_search_properties.append(label)
+    
+    sparql = """
+SELECT ?c {
+  ?c rdfs:label ?label .
+  FILTER(FTS(?label, "muscle pain"))
+}
+"""
+    q, r = self.sparql(world, sparql, compare_with_rdflib = False)
+    assert { i for i, in r } == { c1 }
+    
+    sparql = """
+SELECT ?c {
+  ?c rdfs:label ?label .
+  FILTER(FTS(?label, "musc* pain"))
+}
+"""
+    q, r = self.sparql(world, sparql, compare_with_rdflib = False)
+    assert { i for i, in r } == { c1, c2 }
+    
+    sparql = """
+SELECT ?c ?bm25 {
+  ?c rdfs:label ?label .
+  FILTER(FTS(?label, "musc* pain", ?bm25))
+}
+"""
+    q, r = self.sparql(world, sparql, compare_with_rdflib = False)
+    assert { i[0] for i in r } == { c1, c2 }
+
+
     
       
 # Add test for Pellet

@@ -161,32 +161,32 @@ class Translator(object):
       r.append(triple)
     return r
   
-  def new_sql_query(self, name, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, nested_inside = None, copy_vars = False, is_delete = False):
+  def new_sql_query(self, name, parent, block, selects = None, distinct = None, solution_modifier = None, preliminary = False, extra_binds = None, copy_vars = False, is_delete = False):
     if preliminary and not name: name = "prelim%s" % (len(self.preliminary_selects) + 1)
     
     if isinstance(block, UnionBlock) and block.simple_union_triples:
       block = SimpleTripleBlock(block.simple_union_triples)
       
     if   isinstance(block, SimpleTripleBlock):
-      s = SQLQuery(name, is_delete = is_delete)
+      s = SQLQuery(name, parent, is_delete = is_delete)
       
     elif isinstance(block, OptionalBlock):
-      s = SQLQuery(name, is_delete = is_delete)
+      s = SQLQuery(name, parent, is_delete = is_delete)
       s.optional = True
       
     elif isinstance(block, UnionBlock):
-      s = SQLCompoundQuery(name, nested_inside, is_delete = is_delete)
+      s = SQLCompoundQuery(name, parent, is_delete = is_delete)
       if selects is None:
         selects = block.get_ordered_vars()
         
     elif isinstance(block, FilterBlock):
-      s = SQLNestedQuery(name, is_delete = is_delete)
+      s = SQLNestedQuery(name, parent, is_delete = is_delete)
       s.exists = isinstance(block, ExistsBlock)
-      if nested_inside: s.vars = nested_inside.vars
+      if parent: s.vars = parent.vars
       preliminary = False
       
     elif isinstance(block, NotExistsBlock):
-      s = SQLCompoundQuery(name, nested_inside, is_delete = is_delete)
+      s = SQLCompoundQuery(name, parent, is_delete = is_delete)
       
     elif isinstance(block, SubQueryBlock):
       s = block.parse()
@@ -225,7 +225,7 @@ class Translator(object):
       
     elif isinstance(block, UnionBlock):
       for alternative in block:
-        query = self.new_sql_query(None, alternative, selects, distinct, None, False, extra_binds, nested_inside = s, copy_vars = False)
+        query = self.new_sql_query(None, s, alternative, selects, distinct, None, False, extra_binds, copy_vars = False)
         s.append(query, "UNION")
       s.finalize_compounds()
       
@@ -643,8 +643,10 @@ class Table(object):
   
   
 class SQLQuery(FuncSupport):
-  def __init__(self, name, is_delete = False):
+  def __init__(self, name, parent = None, is_delete = False):
+    assert not isinstance(parent, bool)
     self.name                     = name
+    self.parent                   = parent
     self.preliminary              = False
     self.recursive                = False
     self.translator               = CURRENT_TRANSLATOR.get()
@@ -996,11 +998,11 @@ class SQLQuery(FuncSupport):
       elif isinstance(triple, Block):
         if   isinstance(triple, SimpleTripleBlock) and (len(triple) == 0): continue # Empty
         elif isinstance(triple, FilterBlock):
-          sub = self.translator.new_sql_query(None, triple, nested_inside = self)
+          sub = self.translator.new_sql_query(None, self, triple)
           self.add_subquery(sub)
           continue
         else:
-          sub = self.translator.new_sql_query(None, triple, preliminary = True, nested_inside = self, copy_vars = True)
+          sub = self.translator.new_sql_query(None, self, triple, preliminary = True, copy_vars = True)
           self.add_subquery(sub)
           continue
       if triple.to_skip: continue
@@ -1286,6 +1288,9 @@ class SQLCompoundQuery(object):
     self.optional                = False
     self.has_select              = False
     self.is_delete               = is_delete
+    self.columns                 = []
+    self.conditions              = []
+    self.name_2_table            = {}
     
   def __repr__(self): return "<%s '%s'>" % (self.__class__.__name__, self.sql())
   
@@ -1324,8 +1329,8 @@ class SQLCompoundQuery(object):
     
     
 class SQLNestedQuery(SQLQuery):
-  def __init__(self, name, is_delete = False):
-    SQLQuery.__init__(self, name, is_delete)
+  def __init__(self, name, parent, is_delete = False):
+    SQLQuery.__init__(self, name, parent, is_delete)
     self.exists = True
     
   def finalize_columns(self):

@@ -267,6 +267,46 @@ The following functions are supported by Owlready, but not standard:
    
  * THE LIKE(a, b) function performs similarly to the SQL Like operator. It is more limited, but faster than the Regex SPARQL functions.
    
+ * THE FTS(a, b) function performs a Full-text-Search (FTS), allowing for very fast text searching. Here is an example:
+   
+   ::
+   
+      >>> default_world.sparql("""
+      SELECT DISTINCT ?x {
+          ?x rdfs:label ?label .
+          FILTER(FTS(?label, "musc* pain")) .
+      }
+      """)
+      
+   The FTS() SPARQL function can also take an optional third argument, the BM25 relevance score. For example:
+   
+   ::
+   
+      >>> default_world.sparql("""
+      SELECT DISTINCT ?x ?bm25 {
+          ?x rdfs:label ?label .
+          FILTER(FTS(?label, "musc* pain", ?bm25)) .
+      }
+      ORDER BY ?bm25
+      """)
+   
+   Notice that, if FTS() is used inside blocks such as UNION, you need to repeat the triple that defines the variable used as first argument to FTS(), e.g.:
+   
+   ::
+      
+      >>> default_world.sparql("""
+      SELECT DISTINCT ?x {
+          {
+              ?x rdfs:label ?label .
+              FILTER(FTS(?label, "chronic back pain")) .
+          } UNION {
+              ?x rdfs:label ?label .
+              FILTER(FTS(?label, "low back pain")) .
+          }
+      }
+      """)
+   
+   
  * The NEWINSTANCEIRI() function create a new IRI for an instance of the class given as argument. This IRI is similar to those
    created by default by Owlready. Note that the function creates 2 RDF triples, asserting that the new individual is an
    OWL NamedIndividual and an instance of the desired class passed as argument.
@@ -293,7 +333,7 @@ if any.
 
 .. note::
    
-   The .sparql() method calls .prepare_sparql(). Thus, there is no interest, in terms of performances, to use
+   The .sparql() method calls .prepare_sparql(). Thus, there is limited interest, in terms of performances, to use
    .prepare_sparql() instead of .sparql().
 
 The PreparedQuery can be used to determine the type of query:
@@ -377,7 +417,11 @@ You can then query the endpoint, e.g. by opening the following URL in your brows
 Using RDFlib for executing SPARQL queries
 *****************************************
 
-The Owlready quadstore can be accessed as an RDFlib graph, which can be used to perform SPARQL queries:
+The Owlready quadstore can be accessed as an RDFlib graph, which can be used to perform SPARQL queries.
+
+However, RDFlib performances are much lower than those of Owlready; so I recommend using the Owlready native SPARQL engine.
+
+Here is an example.
 
 ::
 
