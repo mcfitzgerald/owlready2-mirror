@@ -320,8 +320,6 @@ SELECT DISTINCT ?x {
             self.translator.next_table_id += 1
             query = self.parse_expression(expression[2][2]).strip()
             if query and (query.startswith("'") or query.startswith('"')): query = repr(FTS(query[1:-1]))
-            print(query)
-            print(expression[2][2])
             
             if len(expression[2]) >= 5:
               var_bm25 = expression[2][4]

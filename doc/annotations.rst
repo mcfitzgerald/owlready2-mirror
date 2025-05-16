@@ -289,7 +289,8 @@ When using full-text search, the _bm25 argument can be used to obtain the BM25 r
    >>> default_world.search(label = FTS("keyword1 keyword2*"), _bm25 = True)
 
 
-FTS can also be used inside SPARQL queries. The following example searches for "musc* pain", matching both "muscle pain" and "muscular pain":
+FTS can also be used inside SPARQL queries.
+The following example searches for "musc* pain", matching both "muscle pain" and "muscular pain":
 
 ::
    
@@ -299,6 +300,18 @@ FTS can also be used inside SPARQL queries. The following example searches for "
        FILTER(FTS(?label, "musc* pain")) .
    }
    """)
+   
+When using a parameter to specify the keywords searched, you should use the FTS() pseudo-type as previously
+(unless you  want to pass directly a string to SQLite3 and you know what you are doing):
+
+::
+   
+   >>> default_world.sparql("""
+   SELECT DISTINCT ?x {
+       ?x rdfs:label ?label .
+       FILTER(FTS(?label, ??)) .
+   }
+   """, [FTS("musc* pain")])
    
 The FTS() SPARQL function can also take an optional third argument, the BM25 relevance score. For example:
 

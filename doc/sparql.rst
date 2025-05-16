@@ -267,45 +267,8 @@ The following functions are supported by Owlready, but not standard:
    
  * THE LIKE(a, b) function performs similarly to the SQL Like operator. It is more limited, but faster than the Regex SPARQL functions.
    
- * THE FTS(a, b) function performs a Full-text-Search (FTS), allowing for very fast text searching. Here is an example:
-   
-   ::
-   
-      >>> default_world.sparql("""
-      SELECT DISTINCT ?x {
-          ?x rdfs:label ?label .
-          FILTER(FTS(?label, "musc* pain")) .
-      }
-      """)
-      
-   The FTS() SPARQL function can also take an optional third argument, the BM25 relevance score. For example:
-   
-   ::
-   
-      >>> default_world.sparql("""
-      SELECT DISTINCT ?x ?bm25 {
-          ?x rdfs:label ?label .
-          FILTER(FTS(?label, "musc* pain", ?bm25)) .
-      }
-      ORDER BY ?bm25
-      """)
-   
-   Notice that, if FTS() is used inside blocks such as UNION, you need to repeat the triple that defines the variable used as first argument to FTS(), e.g.:
-   
-   ::
-      
-      >>> default_world.sparql("""
-      SELECT DISTINCT ?x {
-          {
-              ?x rdfs:label ?label .
-              FILTER(FTS(?label, "chronic back pain")) .
-          } UNION {
-              ?x rdfs:label ?label .
-              FILTER(FTS(?label, "low back pain")) .
-          }
-      }
-      """)
-   
+ * THE FTS(a, b) function performs a Full-text-Search (FTS), allowing for very fast text searching.
+   Please refer to the Full Text Search documentation in the :doc:`annotations` chapter.
    
  * The NEWINSTANCEIRI() function create a new IRI for an instance of the class given as argument. This IRI is similar to those
    created by default by Owlready. Note that the function creates 2 RDF triples, asserting that the new individual is an
