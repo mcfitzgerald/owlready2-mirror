@@ -17,12 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION = "0.47"
+VERSION = "0.48"
 
 JAVA_EXE = "java"
 
 from owlready2.base            import *
-#_render_func = default_render_func
 
 from owlready2.namespace       import *
 from owlready2.entity          import *
@@ -107,8 +106,6 @@ owlready2.individual.AnnotationPropertyClass   = AnnotationPropertyClass
 owlready2.class_construct.Thing       = Thing
 owlready2.class_construct.ThingClass  = ThingClass
 owlready2.class_construct.EntityClass = EntityClass
-
-#owlready2.reasoning.Construct = Construct
 
 del owlready2
 
