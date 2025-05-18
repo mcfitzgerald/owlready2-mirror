@@ -804,7 +804,8 @@ version 2 - 0.48
   * Fix RDF parsing of axiom with restriction in the optimized C-compiled module.
   * Properly close database when a World is destroyed
   * Use requests module for importing French ICD10 (urllib does not work)
-  
+  * Fix SPARQL query with fixed parameters
+    
 
 Links
 -----

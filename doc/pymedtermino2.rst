@@ -161,6 +161,74 @@ For example, for searching for all words beginning by a given prefix:
 , SNOMEDCT_US["40970001"] # Chronic osteomyelitis
 ...]
 
+The TerminologySearcher class allows more complex searches and can also be used for autocompletion. It accepts the following
+parameters when creating a new instance:
+
+ * ancestors: ancestors of the terms searched -- it is a list of terminologies (e.g. for searching in ICD10) or terms (e.g. for searching in sub-branch of SNOMED-CT). Several terminologies or ancestors are accepted, as well as mixes.
+   
+ * props: the list of property used for searching terms. Default is [rdfs.label, PYM.synonyms].
+   
+ * order_by: the criteria for ordering the search results. Accepted values are: "bm25" (better match first, according to SQLite3 BM25 algorithm, default) , "len" (shorter label first) or None (no ordering).
+   
+ * world: the Owlready World used. Default value is guessed automatically from the terminologies / ancestors.
+
+The following example creates a TerminologySearcher for searching in SNOMED-CT clinical findings (404684003 is the SNOMED-CT code for CLinical finding):
+
+>>> from owlready2.pymedtermino2.model import TerminologySearcher
+>>> ts = TerminologySearcher([SNOMEDCT_US[404684003]])
+
+The .search() method behaves similarly to Terminology.search(), but is tailored to the ancestors given when creating the TerminologySearcher.
+It accepts the following parameters:
+
+ * label: the searched label/keyword. It expects a string with one or several word, each word may ends with '*' as a jocker.
+   
+ * langs: the list of languages code used for the search (default is None, which means search in all languages available)
+   
+ * limit: the maximum number of returned terms (default is -1, no limit)
+
+Here is an example:
+   
+>>> ts.search("chronic musc* pain")
+[SNOMEDCT_US["762452003"] # Chronic musculoskeletal pain
+, SNOMEDCT_US["762591005"] # Chronic primary musculoskeletal pain
+, SNOMEDCT_US["39221000087104"] # Chronic pain following musculoskeletal injury
+, SNOMEDCT_US["38771000087102"] # Chronic primary musculoskeletal limb pain
+, SNOMEDCT_US["39141000087101"] # Chronic musculoskeletal pain due to disorder
+, SNOMEDCT_US["762597009"] # Chronic musculoskeletal pain due to persistent inflammation
+, SNOMEDCT_US["762598004"] # Chronic musculoskeletal pain due to disease of nervous system
+]
+
+The .search_storid() method is similar, but returns Owlready Store-IDs instead of term objects. It can be faster if the number of results is high.
+
+The .autocompletion() method can be using for designing field with autocompletion (e.g. using Awesomplete in HTML).
+It accepts the following parameters:
+
+ * label: the label to (auto)complete. Do not add '*' here, Owlready adds them automatically.
+   
+ * display_lang: the languages code of the label returned (default is "en", English)
+   
+ * langs: the list of languages code used for the search (default is None, which means search in all languages available)
+   
+ * limit: the maximum number of returned terms (default is 25)
+   
+ * min_length: the minimum label length for performing a search (default is 4 characters)
+
+It returns a list of (term IRI, term label) pairs, avoiding loading term objects for increased performances.
+
+Here is an example:
+
+>>> ts.autocompletion("chronic musc pain", "en")
+[('http://PYM/SNOMEDCT_US/762452003', 'Chronic musculoskeletal pain'),
+ ('http://PYM/SNOMEDCT_US/762591005', 'Chronic primary musculoskeletal pain'),
+ ('http://PYM/SNOMEDCT_US/39221000087104', 'Chronic pain following musculoskeletal injury'),
+ ('http://PYM/SNOMEDCT_US/38771000087102', 'Chronic primary musculoskeletal limb pain'),
+ ('http://PYM/SNOMEDCT_US/39141000087101', 'Chronic musculoskeletal pain due to disorder'),
+ ('http://PYM/SNOMEDCT_US/762597009', 'Chronic musculoskeletal pain due to persistent inflammation'),
+ ('http://PYM/SNOMEDCT_US/762598004', 'Chronic musculoskeletal pain due to disease of nervous system')]
+
+The term IRI can be used as a unique ID, and the term label for displaying to user.
+
+
 Is-a relations: parent and child concepts
 -----------------------------------------
 

@@ -553,6 +553,8 @@ SELECT DISTINCT ?x {
       if var.type == "objs": return "objs", "'o'"
       return var.type, "%sd" % var.get_binding(self)[:-1]
     elif  expression.name == "PARAM":
+      if self.translator.parameter_2_parameter_datatypes.get(expression.number) == "o":
+        return "objs", "'o'"
       return "quads2", "%sTypeOfParam?%s " % (self.translator.escape_mark, expression.number)
     return None, None
   

@@ -36,6 +36,7 @@ class Translator(object):
     self.current_anonynous_var         = 0
     self.current_parameter             = 0
     self.max_fixed_parameter           = 0
+    self.parameter_2_parameter_datatypes = {}
     self.main_query                    = None
     self.preliminary_selects           = []
     self.recursive_preliminary_selects = {}
@@ -84,18 +85,19 @@ class Translator(object):
       sql += " OFFSET %s" % self._to_sql(self.solution_modifier[4])
       
     nb_parameter = max(self.current_parameter, self.max_fixed_parameter)
-    parameter_2_parameter_datatypes = {}
     parameter_datatypes = []
     if self.escape_mark in sql:
       def sub(m):
         escape = m.group(0)[len(self.escape_mark):]
         if escape.startswith("TypeOfParam?"):
           number = int(escape[12:])
-          r = parameter_2_parameter_datatypes.get(number)
+          r = self.parameter_2_parameter_datatypes.get(number)
+          if r == "o":
+            return "'o'"
           if r is None:
-            r = parameter_2_parameter_datatypes[number] = self.new_parameter()
+            r = self.parameter_2_parameter_datatypes[number] = self.new_parameter()
             parameter_datatypes.append(number - 1)
-        return "?%s" % r
+          return "?%s" % r
       sql = re.sub("%s[^ ]*" % self.escape_mark, sub, sql)
       
     if   self.main_query.type == "select":
@@ -290,7 +292,7 @@ class PreparedQuery(object):
   def execute_raw(self, params = (), spawn = False):
     self.world._nb_sparql_call += 1
     sql_params = [_list_2_json(param) if isinstance(param, list) else self.world._to_rdf(param)[0] for param in params]
-    for i in self.parameter_datatypes: sql_params.append(self.world._to_rdf(params[i])[1])
+    for i in self.parameter_datatypes: sql_params.append(self.world._to_rdf(params[i])[1] or "o")
     if spawn:
       if spawn is True: spawn = _default_spawn
       with self.world.graph.connexion_pool.get() as db:
@@ -306,7 +308,7 @@ class PreparedQuery(object):
   def execute_raw_with_db(self, params, db):
     self.world._nb_sparql_call += 1
     sql_params = [self.world._to_rdf(param)[0] for param in params]
-    for i in self.parameter_datatypes: sql_params.append(self.world._to_rdf(params[i])[1])
+    for i in self.parameter_datatypes: sql_params.append(self.world._to_rdf(params[i])[1] or "o")
     return db.execute(self.sql, sql_params)
   
 class PreparedSelectQuery(PreparedQuery):
@@ -840,6 +842,8 @@ class SQLQuery(FuncSupport):
         continue # Optional => cannot be used to restrict variable type
       
       s, p, o = triple
+      if s.name == "PARAM":
+        self.translator.parameter_2_parameter_datatypes[s.number] = "o"
       if s.name == "VAR":
         var = self.parse_var(s)
         var.update_type("objs")

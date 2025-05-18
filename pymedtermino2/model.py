@@ -528,50 +528,97 @@ def _create_icd10_2_icd10_french_atih_mapper(dest):
 
 
 class TerminologySearcher(object):
-  def __init__(self, ancestors, props = ["rdfs:label", "pym:synonyms"], order_by = "bm25", world = None):
+  def __init__(self, ancestors, props = None, order_by = "bm25", world = None):
     if not isinstance(ancestors, list): ancestors = [ancestors]
     self.world    = ancestors[0].namespace.world if ancestors else world or default_world
-
+    if not props: props = [label, self.world["http://PYM/synonyms"]]
+    
     terminologies = { i if i.iri.startswith("http://PYM/SRC/") else i.terminology for i in ancestors if i.terminology }
     ancestors     = set(ancestors) - terminologies
-    terminologies = ["<%s>" % terminology.iri for terminology in terminologies]
+    terminologies = [terminology.storid for terminology in terminologies]
     
-    sparql_no_lang = sparql = """
-SELECT DISTINCT (STORID(?x) AS ?r) (STR(?x) AS ?name) {"""
-    blocks = []
+#     sparql_no_lang = sparql = """
+# SELECT DISTINCT (STORID(?x) AS ?r) (STR(?x) AS ?iri) {"""
+#     blocks = []
+#     if terminologies:
+#       for terminology in terminologies:
+#         for prop in props:
+#           blocks.append("""
+#     ?x pym:terminology %s .
+#     ?x <%s> ?label .
+#     FILTER(FTS(?label, ??1%s)) .
+# """ % (terminology, prop.iri, ", ?bm25" if order_by == "bm25" else ""))
+#     else:
+#       for prop in props:
+#         blocks.append("""
+#     ?x <%s> ?label .
+#     FILTER(FTS(?label, ??1%s)) .
+# """ % (prop.iri, ", ?bm25" if order_by == "bm25" else ""))
+    
+#     lang_part = """    FILTER(LANG(?label) IN ??2) .\n"""
+#     if len(blocks) == 1:
+#       sparql_no_lang += blocks[0]
+#       sparql         += blocks[0]
+#       sparql         += lang_part
+#     else:
+#       sparql_no_lang += """\n  {%s  }\n""" % "  } UNION {".join(blocks)
+#       sparql         += """\n  {%s  }\n""" % "  } UNION {".join([block + lang_part for block in  blocks])
+      
+#     sparql_no_lang += """}"""
+#     sparql         += """}"""
+#     if   order_by == "bm25": sparql_no_lang += """\nORDER BY ?bm25"""         ; sparql += """\nORDER BY ?bm25"""
+#     elif order_by == "len":  sparql_no_lang += """\nORDER BY STRLEN(?label)"""; sparql += """\nORDER BY STRLEN(?label)"""
+#     sparql_no_lang += """\nLIMIT ??2"""
+#     sparql         += """\nLIMIT ??3"""
+    
+#     self.q1_no_lang = self.world.prepare_sparql(sparql_no_lang)
+#     self.q1_lang    = self.world.prepare_sparql(sparql)
+    
+    sql = ""
     if terminologies:
+      prop_termino = self.world["http://PYM/terminology"].storid
       for terminology in terminologies:
         for prop in props:
-          blocks.append("""
-    ?x pym:terminology %s .
-    ?x %s ?label .
-    FILTER(FTS(?label, ??1, ?bm25)) .
-""" % (terminology, prop))
+          if sql: sql += "UNION ALL\n"
+          sql += """SELECT fts.s AS s"""
+          if   order_by == "bm25": sql += ", bm25(fts_%s) AS rank" % prop.storid
+          elif order_by == "len":  sql += ", length(fts.o) AS rank"
+          sql += """\nFROM fts_%s fts, objs q1\n""" % prop.storid
+          sql += """WHERE (fts.o MATCH ?1) AND q1.s=fts.s AND q1.p=%s AND q1.o=%s\n""" % (prop_termino, terminology)
     else:
       for prop in props:
-        blocks.append("""
-    ?x %s ?label .
-    FILTER(FTS(?label, ??1, ?bm25)) .
-""" % prop)
+        if sql: sql += "UNION ALL\n"
+        sql += """SELECT fts.s AS s"""
+        if   order_by == "bm25": sql += ", bm25(fts_%s) AS rank" % prop.storid
+        elif order_by == "len":  sql += ", length(fts.o) AS rank"
+        sql += """\nFROM fts_%s fts\n""" % prop.storid
+        sql += """WHERE (fts.o MATCH ?1)\n"""
+    sql = """SELECT s FROM (\n%s)\nGROUP BY s ORDER BY MIN(rank)\n""" % sql
+    sql += """LIMIT ?2"""
+    self.sql_no_lang = sql
     
-    lang_part = """    FILTER(LANG(?label) IN ??2) .\n"""
-    if len(blocks) == 1:
-      sparql_no_lang += blocks[0]
-      sparql         += blocks[0]
-      sparql         += lang_part
+    sql = ""
+    if terminologies:
+      prop_termino = self.world["http://PYM/terminology"].storid
+      for terminology in terminologies:
+        for prop in props:
+          if sql: sql += "UNION ALL\n"
+          sql += """SELECT fts.s"""
+          if   order_by == "bm25": sql += ", bm25(fts_%s)" % prop.storid
+          elif order_by == "len":  sql += ", length(fts.o)"
+          sql += """\nFROM fts_%s fts, datas q, objs q1\n""" % prop.storid
+          sql += """WHERE (fts.o MATCH ?1) AND q1.s=fts.s AND q1.p=%s AND q1.o=%s AND q.s=fts.s AND q.p=%s AND q.o=fts.o AND q.d IN (SELECT value FROM json_each(?2))\n""" % (prop_termino, terminology, prop.storid)
     else:
-      sparql_no_lang += """\n  {%s  }\n""" % "  } UNION {".join(blocks)
-      sparql         += """\n  {%s  }\n""" % "  } UNION {".join([block + lang_part for block in  blocks])
-      
-    sparql_no_lang += """}"""
-    sparql         += """}"""
-    if   order_by == "bm25": sparql_no_lang += """\nORDER BY ?bm25"""         ; sparql += """\nORDER BY ?bm25"""
-    elif order_by == "len":  sparql_no_lang += """\nORDER BY STRLEN(?label)"""; sparql += """\nORDER BY STRLEN(?label)"""
-    sparql_no_lang += """\nLIMIT ??2"""
-    sparql         += """\nLIMIT ??3"""
-    
-    self.q1_no_lang = self.world.prepare_sparql(sparql_no_lang)
-    self.q1_lang    = self.world.prepare_sparql(sparql)
+      for prop in props:
+        if sql: sql += "UNION ALL\n"
+        sql += """SELECT fts.s"""
+        if   order_by == "bm25": sql += ", bm25(fts_%s)" % prop.storid
+        elif order_by == "len":  sql += ", length(fts.o)"
+        sql += """\nFROM fts_%s fts, datas q\n""" % prop.storid
+        sql += """WHERE (fts.o MATCH ?1) AND q.s=fts.s AND q.p=%s AND q.o=fts.o AND q.d IN (SELECT value FROM json_each(?2))\n""" % (prop.storid)
+    if order_by: sql += """ORDER BY 2\n"""
+    sql += """LIMIT ?3"""
+    self.sql_lang = sql
     
     if ancestors:
       self.q2 = self.world.prepare_sparql("""
@@ -584,7 +631,7 @@ SELECT (STORID(?ancestor) AS ?r) {
       self.q2 = None
       
     self.q3 = self.world.prepare_sparql("""
-SELECT (STR(COALESCE(?label, ?label_en)) AS ?label_str) {
+SELECT (STR(??1) AS ?iri) (STR(COALESCE(?label, ?label_en)) AS ?label_str) {
   ??1 rdfs:label ?label_en .
   FILTER(LANG(?label_en) = "en") .
   OPTIONAL {
@@ -595,28 +642,35 @@ SELECT (STR(COALESCE(?label, ?label_en)) AS ?label_str) {
 """)
     
   def search_storid(self, label, langs = None, limit = -1):
-    if langs: r0 = list(self.q1_lang   .execute((FTS(label), langs, limit)))
-    else:     r0 = list(self.q1_no_lang.execute((FTS(label),        limit)))
-    if self.q2: return [storid for storid, name in r0 if tuple(self.q2.execute((storid,)))]
-    else:       return [storid for storid, name in r0]
-  
+    if langs:
+      #r0 = list(self.q1_lang   .execute((FTS(label), langs, limit)))
+      r0 = self.world.graph.execute(self.sql_lang, (FTS(label), "[%s]" % ",".join('"@%s"' % lang for lang in langs), limit))
+    else:
+      #r0 = list(self.q1_no_lang.execute((FTS(label),        limit)))
+      r0 = self.world.graph.execute(self.sql_no_lang, (FTS(label), limit))
+    if self.q2: return [i[0] for i in r0 if self.q2.execute((i[0],))]
+    else:       return [i[0] for i in r0]
+    
   def search(self, label, langs = None, limit = -1):
     return [self.world._get_by_storid(storid) for storid in self.search_storid(label, langs, limit)]
   
-  def autocompletion(self, label, display_lang = "en", langs = False, limit = 25, min_length = 4):
+  def autocompletion(self, label, display_lang = "en", langs = "display_lang", limit = 25, min_length = 4):
     if len(label) < min_length: return []
     label = " ".join("%s*" % word for word in label.split())
     
-    if langs is False: r0 = self.q1_lang   .execute((FTS(label), [display_lang], -1))
-    elif langs:        r0 = self.q1_lang   .execute((FTS(label), langs,          -1))
-    else:              r0 = self.q1_no_lang.execute((FTS(label),                 -1))
+    #if langs is False: r0 = self.q1_lang   .execute((FTS(label), [display_lang], -1))
+    #elif langs:        r0 = self.q1_lang   .execute((FTS(label), langs,          -1))
+    #else:              r0 = self.q1_no_lang.execute((FTS(label),                 -1))
+    if langs == "display_lang": r0 = self.world.graph.execute(self.sql_lang,    (FTS(label), '["@%s"]' % display_lang, -1)).fetchall()
+    elif langs:                 r0 = self.world.graph.execute(self.sql_lang,    (FTS(label), "[%s]" % ",".join('"@%s"' % lang for lang in langs), -1)).fetchall()
+    else:                       r0 = self.world.graph.execute(self.sql_no_lang, (FTS(label), -1)).fetchall()
     
     r  = []
-    for storid, name in r0:
-      if (not self.q2) or tuple(self.q2.execute((storid,))):
-        r_label = list(self.q3.execute((storid, display_lang)))
+    for i in r0:
+      if (not self.q2) or tuple(self.q2.execute((i[0],))):
+        r_label = list(self.q3.execute((i[0], display_lang)))
         if r_label:
-          r.append((name, r_label[0][0]))
+          r.append(r_label[0])
           if len(r) >= limit: break
     return r
     

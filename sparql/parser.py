@@ -814,7 +814,7 @@ def f(p):
   translator = CURRENT_TRANSLATOR.get()
   if len(p.value) > 2:
     p.number = int(p.value[2:])
-    if p.number > translator.max_fixed_parameter: translator.max_fixed_parameter = p.number
+    if p.number > translator.max_fixed_parameter: translator.max_fixed_parameter = translator.current_parameter = p.number
   else:
     p.number = translator.new_parameter()
   return p

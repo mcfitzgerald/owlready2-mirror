@@ -11284,23 +11284,24 @@ SELECT ?x {
     assert set(r) == { C1 }
     
     r = t.autocompletion("musc pain")
-    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
     r = t.autocompletion("muscle pain")
-    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
     
     r = t.search("douleur", )
     assert set(r) == { C2 }
     r = t.search("douleur", langs = ["fr"])
     assert set(r) == { C2 }
     r = t.search("douleur", langs = ["en"])
+    
     assert set(r) == set()
     
     r = t.autocompletion("douleur")
     assert set(r) == set()
     r = t.autocompletion("douleur", "fr")
-    assert set(r) == { ('http://test.org/onto.owl#C2', 'Douleur musculaire') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C2', 'Douleur musculaire') }
     r = t.autocompletion("douleur", "en", None)
-    assert set(r) == { ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C2', 'Muscular pain') }
     
     t = TerminologySearcher([], world = world)
     r = t.search("musc* pain")
@@ -11309,13 +11310,43 @@ SELECT ?x {
     assert set(r) == { C1 }
     
     r = t.autocompletion("musc pain")
-    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C1', 'Muscle pain'), ('http://test.org/onto.owl#C2', 'Muscular pain') }
     r = t.autocompletion("muscle pain")
-    assert set(r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
+    assert set(tuple(i) for i in r) == { ('http://test.org/onto.owl#C1', 'Muscle pain') }
     
-
-
-
+  def test_184(self):
+    world = self.new_world()
+    onto  = world.get_ontology("http://test.org/onto.owl")
+    with onto:
+      class C(Thing): label = ["label C"]
+      
+    q = world.prepare_sparql("""
+SELECT (STR(??1) AS ?iri) ?label {
+  ??1 rdfs:label ?label .
+}
+""")
+    r = list(q.execute([C]))
+    assert r == [[C.iri, C.label.first()]]
+    
+    r = list(q.execute([C.storid]))
+    assert r == [[C.iri, C.label.first()]]
+    
+    with onto:
+      class D(Thing): label = [locstr("label D", "en"), locstr("libellé D", "fr")]
+      
+    q = world.prepare_sparql("""
+SELECT (STR(??1) AS ?iri) (STR(COALESCE(?label, ?label_en)) AS ?label_str) {
+  ??1 rdfs:label ?label_en .
+  FILTER(LANG(?label_en) = "en") .
+  OPTIONAL {
+  ??1 rdfs:label ?label .
+  FILTER(LANG(?label) = "fr") .
+  }
+} LIMIT 1
+""")
+    r = list(q.execute([D]))
+    assert r == [[D.iri, D.label.fr.first()]]
+    
 
     
 # Add test for Pellet
