@@ -168,7 +168,7 @@ class Translator(object):
     
     if isinstance(block, UnionBlock) and block.simple_union_triples:
       block = SimpleTripleBlock(block.simple_union_triples)
-      
+        
     if   isinstance(block, SimpleTripleBlock):
       s = SQLQuery(name, parent, is_delete = is_delete)
       
@@ -947,7 +947,7 @@ class SQLQuery(FuncSupport):
         
     conditions = self.conditions
     if isinstance(triples, TripleBlockWithStatic):
-      for static in triples.static_valuess:
+      for static in triples.static_valuess: # First pass for querying static block
         if isinstance(static, StaticBlock):
           if self.raw_selects == "*":
             static.vars = sorted(static.all_vars)
@@ -960,7 +960,7 @@ class SQLQuery(FuncSupport):
             var = static.translator.main_query.vars.get(var)
             if var: static.types.append(var.type)
             else:   static.types.append("quads2")
-              
+            
           var_2_columns = defaultdict(list)
           for column in static.translator.main_query.columns:
             var_2_columns[column.var].append(column)
@@ -970,8 +970,15 @@ class SQLQuery(FuncSupport):
           static.translator.main_query.finalize_columns()
           static.translator.solution_modifier = [None, None, None, None, None]
           q = static.translator.finalize()
-          static.valuess = list(q._execute_sql())
           
+          if static.map_var_to:
+            static.map_var_to.valuess.extend(q._execute_sql())
+          else:
+            static.valuess = list(q._execute_sql())
+          
+      for static in triples.static_valuess: # Second pass, do the job
+        if static.map_var_to: continue
+        
         if (not has_optional_triple) and len(static.vars) == 1: # This optimization is not supported with optional blocks
           var = self.parse_var(static.vars[0])
           var.update_type(static.types[0])

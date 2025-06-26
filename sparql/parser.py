@@ -458,7 +458,9 @@ def f(p): return p[0]
 @pg.production("group_graph_pattern_item : group_graph_pattern+") # UNION
 def f(p):
   if len(p[0]) == 1: return p[0][0]
-  return UnionBlock(p[0])
+  block = UnionBlock(p[0])
+  if isinstance(block.simple_union_triples, Block): return block.simple_union_triples
+  return block
 @pg.production("group_graph_pattern_item : OPTIONAL group_graph_pattern")
 def f(p):
   p = p[1]
@@ -1097,16 +1099,18 @@ class Block(list):
 class UnionBlock(Block):
   def __init__(self, l = None):
     Block.__init__(self, l or [])
-    
     self.simple_union_triples = self._to_simple_union()
     
   def __repr__(self): return "<%s %s %s>" % (self.__class__.__name__, "Simple" if self.simple_union_triples else "Non-Simple", list.__repr__(self))
   
   def _to_simple_union(self):
-    if len(self[0]) == 2:
+    if   len(self[0]) == 2:
       r = self._to_simple_union2()
       if r: return r
-
+    elif (len(self[0]) == 1) and self[0].static_valuess:
+      r = self._to_simple_union3()
+      if r: return r
+      
     for i in self:
       if not isinstance(i, SimpleTripleBlock): return None
       if len(i) > 1: return None
@@ -1160,6 +1164,22 @@ class UnionBlock(Block):
     
     vs = [i[1][2] for i in self]
     return [self[0][0], Triple([self[0][1][0], self[0][1][1], SimpleUnion(vs)])]
+  
+  def _to_simple_union3(self):
+    ss = set()
+    for i in self:
+      if len(i) != 1: return None
+      if len(i.static_valuess) != 1: return None
+      if getattr(i[0][1], "storid", None) != rdf_type: return None
+      if getattr(i[0][1], "modifier", None): return None
+      ss.add(repr(i[0][0]))
+    if len(ss) != 1: return None
+    
+    for i in self[1:]:
+      static_values = i.static_valuess[0]
+      static_values.map_var_to = self[0].static_valuess[0]
+      self[0].static_valuess.append(static_values)
+    return self[0]
   
       
   def _get_ordered_vars(self, vars, ordered_vars, root_call = False):
@@ -1338,9 +1358,10 @@ class Filter(object):
   
 class StaticValues(object):
   def __init__(self):
-    self.vars    = []
-    self.valuess = []
-    self.types   = []
+    self.vars       = []
+    self.valuess    = []
+    self.types      = []
+    self.map_var_to = ""
     
   def _get_ordered_vars(self, vars, ordered_vars, root_call = False): pass
   
@@ -1353,6 +1374,7 @@ class StaticBlock(StaticValues):
     self.inner_blocks = blocks
     self.ordered_vars = list(_get_vars(blocks))
     self.all_vars     = set(_get_vars(blocks))
+    self.map_var_to   = ""
     
     self.old_translator = CURRENT_TRANSLATOR.get()
     self.translator = self.old_translator.make_translator()

@@ -806,6 +806,11 @@ version 2 - 0.48
   * Use requests module for importing French ICD10 (urllib does not work)
   * Fix SPARQL query with fixed parameters
     
+version 2 - 0.49
+****************
+
+* Optimize STATIC SPARQL extention when used in simple union
+
 
 Links
 -----
